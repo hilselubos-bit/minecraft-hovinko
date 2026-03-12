@@ -155,16 +155,13 @@ function drawCreeperFrame(g, ox, legDeg) {
 class BootScene extends Phaser.Scene {
     constructor() { super('BootScene'); }
 
-    preload() {
-        this.load.svg('toilet_paper', 'src/toilet-paper.svg', { scale: 0.06 });
-        this.load.image('toilet', 'src/toilet-bowl.avif');
-    }
-
     create() {
         this._makePoop();
         this._makeSteve();
         this._makeSkeleton();
         this._makeCreeper();
+        this._makeToilet();
+        this._makeToiletPaper();
         this._makeGround();
         this._makeCloud();
         this._makeSun();
@@ -208,6 +205,47 @@ class BootScene extends Phaser.Scene {
         this.textures.addSpriteSheet('creeper', sheet, { frameWidth: 52, frameHeight: 76 });
         this.anims.create({ key: 'creeper_idle', frames: [{ key: 'creeper', frame: 0 }], frameRate: 1 });
         this.anims.create({ key: 'creeper_walk', frames: this.anims.generateFrameNumbers('creeper', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+    }
+
+    _makeToilet() {
+        const c = document.createElement('canvas');
+        c.width = 56; c.height = 64;
+        const g = c.getContext('2d');
+        g.fillStyle = '#F0F0F0'; g.fillRect(10, 2, 36, 22);
+        g.fillStyle = '#DCDCDC'; g.fillRect(10, 2, 36, 3);
+        g.fillStyle = '#E8E8E8'; g.fillRect(12, 6, 7, 14);
+        g.fillStyle = '#ccc';    g.fillRect(30, 8, 11, 8);
+        g.fillStyle = '#aaa';    g.fillRect(33, 10, 5, 4);
+        g.fillStyle = '#BDBDBD'; g.fillRect(10, 23, 36, 2);
+        g.fillStyle = '#E0E0E0'; g.fillRect(18, 25, 20, 4);
+        g.fillStyle = '#FAFAFA'; g.fillRect(5, 29, 46, 28);
+        g.fillStyle = '#E8E8E8'; g.fillRect(5, 55, 46, 4);
+        g.fillStyle = '#E0E0E0'; g.fillRect(3, 29, 50, 5);
+        g.fillStyle = '#B3E5FC'; g.fillRect(11, 36, 34, 18);
+        g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(15, 38, 14, 4);
+        g.strokeStyle = '#BDBDBD'; g.lineWidth = 1.5;
+        g.strokeRect(5, 29, 46, 30); g.strokeRect(10, 2, 36, 22);
+        this.textures.addCanvas('toilet', c);
+    }
+
+    _makeToiletPaper() {
+        const c = document.createElement('canvas');
+        c.width = 52; c.height = 62;
+        const g = c.getContext('2d');
+        g.fillStyle = '#F5F5F5'; g.fillRect(6, 10, 40, 42);
+        g.fillStyle = '#E0E0E0'; g.fillRect(6, 10, 7, 42);
+        g.fillStyle = '#E8E8E8'; g.fillRect(39, 10, 7, 42);
+        g.fillStyle = '#fff';    g.fillRect(15, 10, 9, 42);
+        g.fillStyle = '#E0E0E0';
+        for (let i = 0; i < 6; i++) g.fillRect(6, 10 + i * 8, 40, 1);
+        g.fillStyle = '#EFEFEF'; g.fillRect(6, 5, 40, 10);
+        g.fillStyle = '#D8D8D8'; g.fillRect(6, 5, 40, 2);
+        g.fillStyle = '#A0724A'; g.fillRect(15, 6, 22, 8);
+        g.fillStyle = '#C8956A'; g.fillRect(15, 6, 8, 8);
+        g.fillStyle = '#E4E4E4'; g.fillRect(6, 48, 40, 8);
+        g.fillStyle = '#F5F5F5'; g.fillRect(28, 52, 14, 12);
+        g.fillStyle = '#E0E0E0'; g.fillRect(28, 52, 14, 1); g.fillRect(38, 52, 4, 12);
+        this.textures.addCanvas('toilet_paper', c);
     }
 
     _makeGround() {
