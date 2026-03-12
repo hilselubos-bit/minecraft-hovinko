@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Minecraft Chytač Hovínek! 💩</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #gameCanvas {
+            display: block;
+            image-rendering: pixelated;
+            max-height: 100vh;
+            max-width: 100vw;
+        }
+    </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="480" height="640"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Responsive scaling
+function resizeCanvas() {
+    const scale = Math.min(window.innerWidth / 480, window.innerHeight / 640);
+    canvas.style.width = (480 * scale) + 'px';
+    canvas.style.height = (640 * scale) + 'px';
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// States
+const STATE = { MENU: 0, PLAYING: 1, NAME_INPUT: 2, LEADERBOARD: 3 };
+let state = STATE.MENU;
+
+// Audio
+let audioCtx = null;
+function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function playTone(freq, duration, type = 'square', vol = 0.15) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+}
+function playCatch() { playTone(523, 0.05); setTimeout(() => playTone(784, 0.1), 50); }
+function playMiss()  { playTone(200, 0.3, 'sawtooth'); }
+function playLevelUp() {
+    [523,659,784,1047].forEach((f, i) => setTimeout(() => playTone(f, 0.15), i * 100));
+}
+function playGameOver() {
+    [400,300,200,150].forEach((f, i) => setTimeout(() => playTone(f, 0.25, 'sawtooth'), i * 150));
+}
+
+// Game vars
+let score = 0, lives = 3, baseSpeed = 2, frame = 0;
+let poops = [], particles = [], scorePopups = [];
+let shakeTimer = 0, spawnTimer = 0, spawnInterval = 100, levelUpTimer = 0;
+let playerName = '';
+let leaderboard = JSON.parse(localStorage.getItem('mc_hovinko_v2') || '[]');
+
+// Player
+const player = { x: 240, y: 538, speed: 6, dir: 0, walkFrame: 0, walkTimer: 0 };
+
+// Input
+const keys = {};
+let touchX = null;
+
+document.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    initAudio();
+    if (state === STATE.MENU) {
+        if (e.key === 'Enter' || e.key === ' ') startGame();
+        if (e.key === 'l' || e.key === 'L') state = STATE.LEADERBOARD;
+    } else if (state === STATE.NAME_INPUT) {
+        if (e.key === 'Enter' && playerName.trim()) submitScore();
+        else if (e.key === 'Backspace') playerName = playerName.slice(0, -1);
+        else if (e.key.length === 1 && playerName.length < 12) playerName += e.key;
+    } else if (state === STATE.LEADERBOARD) {
+        if (['Enter',' ','Escape'].includes(e.key)) state = STATE.MENU;
+    }
+    if (['ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault(); initAudio();
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 480 / rect.width, scaleY = 640 / rect.height;
+    const tx = (e.touches[0].clientX - rect.left) * scaleX;
+    const ty = (e.touches[0].clientY - rect.top) * scaleY;
+    touchX = tx;
+    handleClick(tx, ty);
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    touchX = (e.touches[0].clientX - rect.left) * (480 / rect.width);
+}, { passive: false });
+canvas.addEventListener('touchend', e => { e.preventDefault(); touchX = null; }, { passive: false });
+canvas.addEventListener('click', e => {
+    initAudio();
+    const rect = canvas.getBoundingClientRect();
+    handleClick(
+        (e.clientX - rect.left) * (480 / rect.width),
+        (e.clientY - rect.top) * (640 / rect.height)
+    );
+});
+
+function handleClick(x, y) {
+    if (state === STATE.MENU) {
+        if (x >= 140 && x <= 340 && y >= 335 && y <= 385) startGame();
+        if (x >= 140 && x <= 340 && y >= 400 && y <= 450) state = STATE.LEADERBOARD;
+    } else if (state === STATE.NAME_INPUT) {
+        if (playerName.trim() && x >= 160 && x <= 320 && y >= 400 && y <= 445) submitScore();
+    } else if (state === STATE.LEADERBOARD) {
+        if (x >= 160 && x <= 320 && y >= 555 && y <= 600) state = STATE.MENU;
+    }
+}
+
+// Game logic
+function startGame() {
+    state = STATE.PLAYING;
+    score = 0; lives = 3; baseSpeed = 2;
+    poops = []; particles = []; scorePopups = [];
+    shakeTimer = 0; spawnTimer = 0; spawnInterval = 100; levelUpTimer = 0;
+    player.x = 240; player.walkFrame = 0;
+}
+
+function spawnPoop() {
+    poops.push({
+        x: 35 + Math.random() * 410,
+        y: -40,
+        speed: baseSpeed + Math.random() * 1.5,
+        rotation: 0,
+        rotSpeed: (Math.random() - 0.5) * 0.12,
+        size: 34 + Math.random() * 8,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleAmp: 0.3 + Math.random() * 0.5
+    });
+}
+
+function createParticles(x, y) {
+    const colors = ['#8B4513','#A0522D','#D2691E','#CD853F','#FFD700','#FF6F00'];
+    for (let i = 0; i < 18; i++) {
+        const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 5;
+        particles.push({
+            x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s - 3,
+            color: colors[i % colors.length],
+            size: 4 + Math.random() * 5,
+            life: 1, decay: 0.025 + Math.random() * 0.025,
+            star: i < 6
+        });
+    }
+}
+
+function submitScore() {
+    const name = playerName.trim(); if (!name) return;
+    leaderboard.push({ name, score });
+    leaderboard.sort((a, b) => b.score - a.score);
+    leaderboard = leaderboard.slice(0, 10);
+    localStorage.setItem('mc_hovinko_v2', JSON.stringify(leaderboard));
+    state = STATE.LEADERBOARD;
+}
+
+function update() {
+    frame++;
+    if (state !== STATE.PLAYING) return;
+
+    // Player movement
+    let moving = 0;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) moving = -1;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) moving = 1;
+    if (touchX !== null) {
+        if (touchX < player.x - 15) moving = -1;
+        else if (touchX > player.x + 15) moving = 1;
+    }
+    player.dir = moving;
+    player.x = Math.max(28, Math.min(452, player.x + moving * player.speed));
+
+    if (moving !== 0) {
+        if (++player.walkTimer >= 7) { player.walkFrame = (player.walkFrame + 1) % 4; player.walkTimer = 0; }
+    } else { player.walkFrame = 0; player.walkTimer = 0; }
+
+    // Spawn
+    if (++spawnTimer >= spawnInterval) { spawnPoop(); spawnTimer = 0; }
+
+    // Update poops
+    for (let i = poops.length - 1; i >= 0; i--) {
+        const p = poops[i];
+        p.y += p.speed;
+        p.rotation += p.rotSpeed;
+        p.wobble += 0.04;
+        p.x += Math.sin(p.wobble) * p.wobbleAmp;
+
+        // Catch zone: upper body of Steve
+        const catchY = player.y - 52;
+        if (Math.abs(p.x - player.x) < 30 && Math.abs(p.y - catchY) < 32) {
+            score++;
+            createParticles(p.x, p.y);
+            scorePopups.push({ x: p.x, y: p.y - 10, text: '+1 💩', timer: 70 });
+            poops.splice(i, 1);
+            playCatch();
+            if (score % 10 === 0) {
+                baseSpeed += 0.5;
+                spawnInterval = Math.max(32, spawnInterval - 8);
+                levelUpTimer = 100;
+                playLevelUp();
+            }
+            continue;
+        }
+        if (p.y > 660) {
+            poops.splice(i, 1);
+            lives--;
+            shakeTimer = 18;
+            playMiss();
+            if (lives <= 0) { shakeTimer = 0; state = STATE.NAME_INPUT; playerName = ''; playGameOver(); }
+        }
+    }
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.18;
+        p.life -= p.decay;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+    for (let i = scorePopups.length - 1; i >= 0; i--) {
+        scorePopups[i].y -= 1.2; scorePopups[i].timer--;
+        if (scorePopups[i].timer <= 0) scorePopups.splice(i, 1);
+    }
+    if (shakeTimer > 0) shakeTimer--;
+    if (levelUpTimer > 0) levelUpTimer--;
+}
+
+// ─── DRAWING ────────────────────────────────────────────────────────────────
+
+function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w,y, x+w,y+h, r);
+    ctx.arcTo(x+w,y+h, x,y+h, r);
+    ctx.arcTo(x,y+h, x,y, r);
+    ctx.arcTo(x,y, x+w,y, r);
+    ctx.closePath();
+}
+
+function drawBackground() {
+    // Sky
+    const sky = ctx.createLinearGradient(0,0,0,540);
+    sky.addColorStop(0, '#5BB8FF'); sky.addColorStop(1, '#B8E4FF');
+    ctx.fillStyle = sky; ctx.fillRect(0,0,480,640);
+
+    // Sun
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(52,36, 44,44);
+    [[68,20,10,14],[82,16,14,10],[98,36,14,10],[82,72,14,10],[68,74,10,14],[50,62,10,10],[34,52,14,10],[34,34,14,10]].forEach(([x,y,w,h]) => ctx.fillRect(x,y,w,h));
+    ctx.fillStyle = '#FFF9C4'; ctx.fillRect(60,44,28,28);
+
+    // Clouds
+    const t = frame * 0.004;
+    drawCloud(60 + Math.sin(t*0.4)*12, 62);
+    drawCloud(250 + Math.sin(t*0.3+1)*18, 38);
+    drawCloud(400 + Math.sin(t*0.35+2)*10, 75);
+
+    // Trees
+    drawTree(18, 445); drawTree(452, 448); drawTree(395, 452);
+
+    // Ground
+    const gY = 538;
+    for (let bx = 0; bx < 480; bx += 32) {
+        ctx.fillStyle = '#5a9e32'; ctx.fillRect(bx, gY, 32, 16);
+        ctx.fillStyle = '#4a8c28';
+        [2,8,16,22].forEach(gx => ctx.fillRect(bx+gx, gY, 3, 5));
+        ctx.fillStyle = '#8B6347'; ctx.fillRect(bx, gY+16, 32, 86);
+        ctx.fillStyle = '#7a5337';
+        ctx.fillRect(bx+4, gY+22, 10,5); ctx.fillRect(bx+18, gY+36, 10,5);
+        ctx.fillRect(bx+6, gY+50, 8,5);  ctx.fillRect(bx+20, gY+64, 10,5);
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1;
+    for (let bx = 0; bx <= 480; bx += 32) { ctx.beginPath(); ctx.moveTo(bx+.5,gY); ctx.lineTo(bx+.5,640); ctx.stroke(); }
+    [gY, gY+16, gY+48, gY+80].forEach(ly => { ctx.beginPath(); ctx.moveTo(0,ly+.5); ctx.lineTo(480,ly+.5); ctx.stroke(); });
+}
+
+function drawCloud(x, y) {
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    [[1,1],[2,1],[3,1],[0,0],[1,0],[2,0],[3,0],[4,0],[1,-1],[2,-1],[3,-1]].forEach(([bx,by]) => ctx.fillRect(x+bx*16, y+by*16, 16,16));
+}
+
+function drawTree(x, y) {
+    ctx.fillStyle = '#5C4033'; ctx.fillRect(x-4, y-28, 8, 28);
+    ctx.fillStyle = '#4a3328'; ctx.fillRect(x-1, y-24, 2, 18);
+    [[0,-60,30,30,'#2e7d32','#1b5e20'],[0,-46,24,24,'#388e3c','#2e7d32'],[0,-35,18,18,'#43a047','#388e3c']].forEach(([ox,oy,w,h,c,d]) => {
+        ctx.fillStyle = c; ctx.fillRect(x+ox-w/2, y+oy, w, h);
+        ctx.fillStyle = d; ctx.fillRect(x+ox-w/2, y+oy, 4, h); ctx.fillRect(x+ox+w/2-4, y+oy, 4, h);
+    });
+}
+
+function drawSteve(x, y, dir, wf) {
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(x, y+2, 22, 5, 0, 0, Math.PI*2); ctx.fill();
+
+    const walkAngle = dir !== 0 ? Math.sin(wf * Math.PI/2) * 0.35 : 0;
+
+    // Legs
+    [[-6, walkAngle],[6,-walkAngle]].forEach(([ox, ang], li) => {
+        ctx.save(); ctx.translate(x+ox, y-22); ctx.rotate(ang);
+        ctx.fillStyle = '#3949AB'; ctx.fillRect(-5,0,10,22);
+        ctx.fillStyle = '#283593'; ctx.fillRect(-5,0,3,22);
+        ctx.fillStyle = '#1A237E'; ctx.fillRect(-5,0,10,4);
+        ctx.fillStyle = '#3E2723'; ctx.fillRect(-6,18,12,6);
+        ctx.restore();
+    });
+
+    // Body
+    ctx.fillStyle = '#1565C0'; ctx.fillRect(x-12, y-44, 24, 22);
+    ctx.fillStyle = '#0D47A1'; ctx.fillRect(x-12, y-44, 24, 4);
+    ctx.fillStyle = '#1976D2'; ctx.fillRect(x-10, y-42, 7, 16);
+    ctx.fillStyle = '#0D47A1'; ctx.fillRect(x-1, y-40, 2, 17);
+
+    // Arms
+    [[-16, -walkAngle],[16, walkAngle]].forEach(([ox, ang]) => {
+        ctx.save(); ctx.translate(x+ox, y-44); ctx.rotate(ang);
+        ctx.fillStyle = '#1565C0'; ctx.fillRect(-4,0,9,16);
+        ctx.fillStyle = '#C68642'; ctx.fillRect(-4,16,9,6);
+        ctx.restore();
+    });
+
+    // Head
+    ctx.fillStyle = '#C68642'; ctx.fillRect(x-12, y-68, 24, 24);
+    // Hair
+    ctx.fillStyle = '#5D4037'; ctx.fillRect(x-12, y-68, 24, 7); ctx.fillRect(x-12, y-61, 4, 4); ctx.fillRect(x+8, y-61, 4, 4);
+    // Eyes white
+    ctx.fillStyle = '#fff'; ctx.fillRect(x-10, y-58, 7, 8); ctx.fillRect(x+3, y-58, 7, 8);
+    // Iris
+    ctx.fillStyle = '#42A5F5'; ctx.fillRect(x-9, y-57, 5, 6); ctx.fillRect(x+4, y-57, 5, 6);
+    // Pupil
+    ctx.fillStyle = '#000'; ctx.fillRect(x-8, y-56, 3, 4); ctx.fillRect(x+5, y-56, 3, 4);
+    // Nose
+    ctx.fillStyle = '#B5651D'; ctx.fillRect(x-1, y-52, 3, 3);
+    // Mouth smile
+    ctx.fillStyle = '#5D4037'; ctx.fillRect(x-5, y-47, 2,2); ctx.fillRect(x-3, y-45, 7,2); ctx.fillRect(x+4, y-47, 2,2);
+    // Eyebrows
+    ctx.fillStyle = '#5D4037'; ctx.fillRect(x-10, y-62, 7,2); ctx.fillRect(x+3, y-62, 7,2);
+}
+
+function drawPoop(p) {
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation);
+    ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.font = `${p.size}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('💩', 3, 3);
+    ctx.globalAlpha = 1; ctx.fillText('💩', 0, 0);
+    ctx.restore();
+}
+
+function drawBtn(cx, cy, w, h, col, border, text, textSize = 13) {
+    ctx.fillStyle = col; rr(cx-w/2, cy-h/2, w, h, 10); ctx.fill();
+    ctx.strokeStyle = border; ctx.lineWidth = 3; rr(cx-w/2, cy-h/2, w, h, 10); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'; rr(cx-w/2+4, cy-h/2+4, w-8, h/2-4, 6); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2;
+    ctx.font = `bold ${textSize}px "Press Start 2P", monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.strokeText(text, cx, cy); ctx.fillText(text, cx, cy); ctx.textBaseline = 'alphabetic';
+}
+
+function drawMenu() {
+    drawBackground();
+    // Panel
+    ctx.fillStyle = 'rgba(0,0,0,0.78)'; rr(30,70,420,240,16); ctx.fill();
+    ctx.strokeStyle = '#5a9e32'; ctx.lineWidth = 4; rr(30,70,420,240,16); ctx.stroke();
+    // Title
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 24px "Press Start 2P", monospace';
+    ctx.strokeStyle = '#1b5e20'; ctx.lineWidth = 3; ctx.strokeText('MINECRAFT', 240, 120); ctx.fillStyle = '#5a9e32'; ctx.fillText('MINECRAFT', 240, 120);
+    ctx.font = 'bold 13px "Press Start 2P", monospace';
+    ctx.strokeStyle = '#5D4037'; ctx.lineWidth = 2; ctx.strokeText('Chytač Hovínek!', 240, 154); ctx.fillStyle = '#FFD700'; ctx.fillText('Chytač Hovínek!', 240, 154);
+    ctx.font = '30px Arial'; ctx.fillText('💩💩💩', 240, 196);
+    ctx.fillStyle = '#ccc'; ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillText('Chytej padající hovínka a získej body!', 240, 228);
+    ctx.fillText('Ovládání: ← → nebo A / D', 240, 252);
+    ctx.fillText('Na tabletu: dotkni se obrazovky', 240, 272);
+    // Animated Steve
+    const bounce = Math.sin(frame * 0.06) * 4;
+    drawSteve(240, 468 + bounce, 0, 0);
+    // Buttons
+    drawBtn(240, 358, 190, 46, '#4CAF50','#2e7d32','▶  HRÁT');
+    drawBtn(240, 420, 190, 46, '#FFC107','#F57F17','🏆 TABULKA');
+}
+
+function drawHUD() {
+    ctx.fillStyle = 'rgba(0,0,0,0.62)'; rr(8,8,185,44,8); ctx.fill();
+    ctx.strokeStyle = '#5a9e32'; ctx.lineWidth = 2; rr(8,8,185,44,8); ctx.stroke();
+    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 13px "Press Start 2P", monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(`💩 ${score}`, 18, 30); ctx.textBaseline = 'alphabetic';
+
+    ctx.fillStyle = 'rgba(0,0,0,0.62)'; rr(287,8,185,44,8); ctx.fill();
+    ctx.strokeStyle = '#e53935'; ctx.lineWidth = 2; rr(287,8,185,44,8); ctx.stroke();
+    ctx.font = '26px Arial'; ctx.textAlign = 'right';
+    ctx.fillText([...Array(3)].map((_,i) => i < lives ? '❤️' : '🖤').join(''), 464, 37);
+
+    const lvl = Math.floor((baseSpeed - 2) / 0.5) + 1;
+    if (lvl > 1) {
+        ctx.fillStyle = 'rgba(0,0,0,0.62)'; rr(197,8,86,44,8); ctx.fill();
+        ctx.fillStyle = '#FF7043'; ctx.font = 'bold 10px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(`LVL ${lvl}`, 240, 22); ctx.font = '18px Arial'; ctx.fillText('🚀', 240, 42); ctx.textBaseline = 'alphabetic';
+    }
+}
+
+function drawLevelUp() {
+    if (levelUpTimer <= 0) return;
+    const alpha = Math.min(1, levelUpTimer / 30);
+    const scale = 1 + (100 - levelUpTimer) / 200;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(240, 210); ctx.scale(scale, scale);
+    ctx.strokeStyle = '#E65100'; ctx.lineWidth = 4; ctx.font = 'bold 22px "Press Start 2P", monospace'; ctx.textAlign = 'center';
+    ctx.strokeText('RYCHLEJI! 🚀', 0, 0); ctx.fillStyle = '#FFD700'; ctx.fillText('RYCHLEJI! 🚀', 0, 0);
+    ctx.restore();
+}
+
+function drawParticles() {
+    particles.forEach(p => {
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        if (p.star) {
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.life * 4);
+            const r = p.size / 2; ctx.beginPath();
+            for (let i = 0; i < 5; i++) { const a = (i * 4 * Math.PI)/5 - Math.PI/2; ctx[i===0?'moveTo':'lineTo'](Math.cos(a)*r, Math.sin(a)*r); }
+            ctx.closePath(); ctx.fill(); ctx.restore();
+        } else { ctx.fillRect(p.x-p.size/2, p.y-p.size/2, p.size, p.size); }
+    });
+    ctx.globalAlpha = 1;
+}
+
+function drawScorePopups() {
+    scorePopups.forEach(sp => {
+        const a = sp.timer / 70;
+        ctx.globalAlpha = a;
+        ctx.font = 'bold 18px "Press Start 2P", monospace'; ctx.textAlign = 'center';
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.strokeText(sp.text, sp.x, sp.y);
+        ctx.fillStyle = '#FFD700'; ctx.fillText(sp.text, sp.x, sp.y);
+    });
+    ctx.globalAlpha = 1;
+}
+
+function drawPlaying() {
+    drawBackground();
+    poops.forEach(p => drawPoop(p));
+    drawSteve(player.x, player.y, player.dir, player.walkFrame);
+    drawParticles();
+    drawScorePopups();
+    drawHUD();
+    drawLevelUp();
+}
+
+function drawNameInput() {
+    drawBackground();
+    ctx.fillStyle = 'rgba(0,0,0,0.82)'; rr(30,120,420,400,16); ctx.fill();
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 4; rr(30,120,420,400,16); ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 18px "Press Start 2P", monospace'; ctx.fillStyle = '#FF5722'; ctx.fillText('HRA SKONČILA!', 240, 175);
+    ctx.font = '40px Arial'; ctx.fillText('😢', 240, 230);
+    ctx.font = 'bold 13px "Press Start 2P", monospace'; ctx.fillStyle = '#FFD700'; ctx.fillText(`Skóre: ${score} 💩`, 240, 278);
+    ctx.fillStyle = '#bbb'; ctx.font = '10px "Press Start 2P", monospace'; ctx.fillText('Zadej své jméno:', 240, 322);
+    // Input box
+    ctx.fillStyle = '#fff'; rr(100,335,280,46,8); ctx.fill();
+    ctx.strokeStyle = '#5a9e32'; ctx.lineWidth = 3; rr(100,335,280,46,8); ctx.stroke();
+    ctx.fillStyle = '#000'; ctx.font = 'bold 15px "Press Start 2P", monospace'; ctx.textBaseline = 'middle';
+    ctx.fillText(playerName + (Math.floor(Date.now()/500)%2===0?'|':''), 240, 358); ctx.textBaseline = 'alphabetic';
+    if (playerName.trim()) drawBtn(240, 422, 185, 44, '#4CAF50','#2e7d32','POTVRDIT ✓', 11);
+    else { ctx.fillStyle = '#777'; ctx.font = '9px "Press Start 2P", monospace'; ctx.fillText('Napiš jméno → stiskni Enter', 240, 430); }
+    ctx.fillStyle = '#555'; ctx.font = '8px "Press Start 2P", monospace'; ctx.fillText('(Na mobilu klikni do políčka)', 240, 476);
+}
+
+function drawLeaderboard() {
+    drawBackground();
+    ctx.fillStyle = 'rgba(0,0,0,0.82)'; rr(18,15,444,590,16); ctx.fill();
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 4; rr(18,15,444,590,16); ctx.stroke();
+    ctx.textAlign = 'center'; ctx.fillStyle = '#FFD700'; ctx.font = 'bold 14px "Press Start 2P", monospace'; ctx.fillText('🏆 NEJLEPŠÍ HRÁČI', 240, 60);
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(38,74); ctx.lineTo(442,74); ctx.stroke();
+
+    if (!leaderboard.length) {
+        ctx.fillStyle = '#aaa'; ctx.font = '11px "Press Start 2P", monospace'; ctx.fillText('Zatím žádné záznamy!', 240, 200);
+        ctx.font = '40px Arial'; ctx.fillText('🎮', 240, 270);
+    } else {
+        leaderboard.slice(0,9).forEach((e, i) => {
+            const ry = 94 + i * 50;
+            ctx.fillStyle = i<3 ? ['rgba(255,215,0,.15)','rgba(192,192,192,.15)','rgba(205,127,50,.15)'][i] : 'rgba(255,255,255,.05)';
+            rr(28, ry-14, 424, 42, 6); ctx.fill();
+            ctx.textAlign = 'left';
+            ctx.font = i<3 ? '20px Arial' : 'bold 11px "Press Start 2P", monospace';
+            ctx.fillStyle = i<3 ? ['#FFD700','#E0E0E0','#CD7F32'][i] : '#aaa';
+            ctx.fillText(i<3 ? ['🥇','🥈','🥉'][i] : `${i+1}.`, 40, ry+8);
+            ctx.fillStyle = i<3 ? ['#FFD700','#E0E0E0','#CD7F32'][i] : '#fff';
+            ctx.font = `bold ${i<3?12:10}px "Press Start 2P", monospace`;
+            ctx.fillText(e.name.substring(0,11), 80, ry+8);
+            ctx.textAlign = 'right'; ctx.fillStyle = '#FFD700'; ctx.font = 'bold 11px "Press Start 2P", monospace';
+            ctx.fillText(`${e.score} 💩`, 444, ry+8);
+        });
+    }
+    drawBtn(240, 578, 160, 42, '#4CAF50','#2e7d32','◀ ZPĚT', 11);
+}
+
+// Mobile name input fallback
+const hiddenInput = document.createElement('input');
+hiddenInput.style.cssText = 'position:fixed;opacity:0;pointer-events:none;top:50%;left:50%;';
+document.body.appendChild(hiddenInput);
+hiddenInput.addEventListener('input', e => { playerName = e.target.value.substring(0,12); });
+canvas.addEventListener('click', e => {
+    if (state === STATE.NAME_INPUT) { hiddenInput.value = playerName; hiddenInput.focus(); }
+});
+
+// Game loop
+function loop() {
+    ctx.clearRect(0,0,480,640);
+    update();
+    ctx.save();
+    if (shakeTimer > 0 && state === STATE.PLAYING) ctx.translate((Math.random()-.5)*6*(shakeTimer/18), (Math.random()-.5)*6*(shakeTimer/18));
+    switch(state) {
+        case STATE.MENU: drawMenu(); break;
+        case STATE.PLAYING: drawPlaying(); break;
+        case STATE.NAME_INPUT: drawNameInput(); break;
+        case STATE.LEADERBOARD: drawLeaderboard(); break;
+    }
+    ctx.restore();
+    requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
