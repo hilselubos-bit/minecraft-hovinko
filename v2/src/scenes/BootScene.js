@@ -70,6 +70,7 @@ class BootScene extends Phaser.Scene {
         this._makePowerups();
         this._makeButt();
         this._makeHeart();
+        this._makeHeartPowerup();
         this.scene.start('MenuScene');
     }
 
@@ -297,5 +298,29 @@ class BootScene extends Phaser.Scene {
         };
         make('#FF3B3B', 'heart_full');
         make('#444444', 'heart_empty');
+    }
+
+    _makeHeartPowerup() {
+        const c = document.createElement('canvas');
+        c.width = c.height = 52;
+        const g = c.getContext('2d');
+        // Záře
+        const grad = g.createRadialGradient(26, 26, 4, 26, 26, 26);
+        grad.addColorStop(0, 'rgba(255,60,60,0.45)');
+        grad.addColorStop(1, 'transparent');
+        g.fillStyle = grad; g.fillRect(0, 0, 52, 52);
+        // Velké srdce
+        g.fillStyle = '#FF3B3B';
+        g.beginPath();
+        g.moveTo(26, 42);
+        g.bezierCurveTo(26, 42,  6, 30,  6, 19);
+        g.bezierCurveTo( 6,  9, 14,  6, 26, 16);
+        g.bezierCurveTo(38,  6, 46,  9, 46, 19);
+        g.bezierCurveTo(46, 30, 26, 42, 26, 42);
+        g.closePath(); g.fill();
+        // Světlo
+        g.fillStyle = 'rgba(255,255,255,0.3)';
+        g.beginPath(); g.ellipse(19, 18, 5, 7, -0.4, 0, Math.PI * 2); g.fill();
+        this.textures.addCanvas('powerup_heart', c);
     }
 }

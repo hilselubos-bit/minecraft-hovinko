@@ -30,6 +30,9 @@ class GameScene extends Phaser.Scene {
         this._lastKeyTime  = 0;
         this._lastKeyCode  = '';
 
+        // Nasbírané zadky
+        this.buttCount = 0;
+
         // Objekty
         this.poops    = [];
         this.powerups = [];
@@ -40,6 +43,7 @@ class GameScene extends Phaser.Scene {
         this._buildHUD();
         this._buildInput();
         this._audioCtx = null;
+        this._fartAudio = new Audio('src/apebble-fart-5-228245.mp3');
     }
 
     // ═══ POZADÍ ═══════════════════════════════════════════════════════════════
@@ -107,11 +111,11 @@ class GameScene extends Phaser.Scene {
         this.add.text(13, 17, 'SK:', labelStyle).setDepth(20);
         this.scoreTxt = this.add.text(58, 17, '0', labelStyle).setDepth(20);
 
-        // Životy — 3 samostatné text objekty, plain unicode ♥/♡
+        // Životy — max 5, plain unicode ♥/♡
         this.hearts = [];
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 5; i++) {
             this.hearts.push(
-                this.add.text(this.W - 18 - i * 28, 17, '\u2665', { ...labelStyle, fill: '#FF3B3B' }).setDepth(20)
+                this.add.text(this.W - 18 - i * 24, 17, '\u2665', { ...labelStyle, fontSize: '11px', fill: '#FF3B3B' }).setDepth(20)
             );
         }
 
@@ -122,6 +126,13 @@ class GameScene extends Phaser.Scene {
         // Power-up
         this.puTxt = this.add.text(this.W / 2, 54, '', { ...labelStyle, fontSize: '11px', fill: '#fff' })
             .setOrigin(0.5, 0).setAlpha(0).setDepth(20);
+
+        // Butt inventář — vlevo dole nad zemí, klikatelný
+        this.buttIcon = this.add.image(38, this.H - 148, 'powerup_butt')
+            .setScale(0.9).setAlpha(0).setDepth(20).setInteractive();
+        this.buttCountTxt = this.add.text(64, this.H - 158, '', { ...labelStyle, fontSize: '14px', fill: '#FFAA88' })
+            .setAlpha(0).setDepth(20);
+        this.buttIcon.on('pointerdown', () => this._useFart());
     }
 
     _hudUpdate() {
@@ -139,6 +150,11 @@ class GameScene extends Phaser.Scene {
         } else {
             this.puTxt.setAlpha(0);
         }
+
+        // Butt indikátor
+        const hasBut = this.buttCount > 0;
+        this.buttIcon.setAlpha(hasBut ? 1 : 0);
+        this.buttCountTxt.setText(hasBut ? `x${this.buttCount}` : '').setAlpha(hasBut ? 1 : 0);
     }
 
     // ═══ VSTUP ════════════════════════════════════════════════════════════════
@@ -157,9 +173,10 @@ class GameScene extends Phaser.Scene {
         this.input.on('pointermove', p => { if (p.isDown) this.touchDir = p.x < this.player.x ? -1 : 1; });
         this.input.on('pointerup',   () => { this.touchDir = 0; });
 
-        // Double-arrow → turbo
+        // Double-arrow → turbo (tajné)
         this.input.keyboard.on('keydown', e => {
             const k = e.code;
+            if (k === 'Space') { this._useFart(); return; }
             if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'KeyA' || k === 'KeyD') {
                 const now = this.time.now;
                 if (k === this._lastKeyCode && now - this._lastKeyTime < 300) this._activateBoost();
@@ -167,6 +184,13 @@ class GameScene extends Phaser.Scene {
                 this._lastKeyTime = now;
             }
         });
+    }
+
+    _useFart() {
+        if (this.buttCount <= 0 || this.isOver) return;
+        this.buttCount--;
+        this._hudUpdate();
+        this._fartEffect();
     }
 
     _activateBoost() {
@@ -189,7 +213,7 @@ class GameScene extends Phaser.Scene {
 
     _spawnPowerup() {
         const roll = Math.random();
-        const type = roll < 0.34 ? 'shield' : roll < 0.67 ? 'star' : 'butt';
+        const type = roll < 0.25 ? 'shield' : roll < 0.5 ? 'star' : roll < 0.75 ? 'butt' : 'heart';
         const x    = Phaser.Math.Between(55, this.W - 55);
         const img  = this.add.image(x, -55, `powerup_${type}`).setScale(0).setDepth(7);
         img.vy     = 62 + Math.random() * 22;
@@ -200,8 +224,9 @@ class GameScene extends Phaser.Scene {
         this.tweens.add({ targets: img, scale: 1.15, duration: 400, ease: 'Back.Out' });
 
         // Blikající upozornění nahoře
-        const label = type === 'shield' ? 'STIT PADA!' : type === 'star' ? '2x BODY PADA!' : 'ZADEK PADA!';
-        const color = type === 'shield' ? '#00BFFF' : type === 'star' ? '#FFD700' : '#FFAA88';
+        const labels = { shield: 'STIT PADA!', star: '2x BODY PADA!', butt: 'ZADEK PADA!', heart: '+1 ZIVOT PADA!' };
+        const colors = { shield: '#00BFFF', star: '#FFD700', butt: '#FFAA88', heart: '#FF3B3B' };
+        const label = labels[type], color = colors[type];
         const ann = this.add.text(x, 105, label, {
             fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
             fill: color, stroke: '#000', strokeThickness: 3
@@ -254,8 +279,13 @@ class GameScene extends Phaser.Scene {
         } else if (type === 'star') {
             this.starSec = 8;
             this._showMsg('2x BODY!', '#FFD700', x, y);
+        } else if (type === 'heart') {
+            this.lives = Math.min(this.lives + 1, 5);
+            this._showMsg('+1 ZIVOT!', '#FF3B3B', x, y);
         } else {
-            this._fartEffect();
+            // Butt: přidej do inventáře, nespouštěj fart hned
+            this.buttCount++;
+            this._showMsg('ZADEK +1!', '#FFAA88', x, y);
         }
         this._hudUpdate();
     }
@@ -266,31 +296,41 @@ class GameScene extends Phaser.Scene {
 
         // Steve se otočí zády
         this.player.setFlipX(!wasFlipped);
-        this._sound('fart');
+
+        // MP3 fart zvuk
+        try {
+            this._fartAudio.currentTime = 0;
+            this._fartAudio.play().catch(() => {});
+        } catch(e) {}
+
         this._showMsg('PRRRR!', '#90EE90', px, py - 30);
 
-        // Fartový výtr — 3 kruhy letí do strany
+        // Výtr — 7 vln zelených koulí letících do strany s rostoucím rozptylem
         const dir = wasFlipped ? 1 : -1;
-        [0, 180, 360].forEach(delay => {
-            const g = this.add.graphics().setDepth(15);
+        for (let i = 0; i < 7; i++) {
+            const delay = i * 160;
+            const gfx = this.add.graphics().setDepth(15);
+            // Každá vlna má lehce jiný offset ve výšce
+            const yOff = (i % 3 - 1) * 14;
             this.tweens.add({
-                targets: { r: 10, ax: 0, alpha: 0.7 },
-                r: 50, ax: 80, alpha: 0,
-                delay, duration: 700,
+                targets: { r: 8, ax: 0, alpha: 0.75 },
+                r: 52 + i * 6, ax: 110 + i * 12, alpha: 0,
+                delay, duration: 900 + i * 60,
+                ease: 'Sine.Out',
                 onUpdate: (tw, obj) => {
-                    g.clear();
-                    g.fillStyle(0x90EE90, obj.alpha);
-                    g.fillCircle(px + dir * (30 + obj.ax), py + 20, obj.r);
+                    gfx.clear();
+                    gfx.fillStyle(0x90EE90, obj.alpha);
+                    gfx.fillCircle(px + dir * (28 + obj.ax), py + 18 + yOff, obj.r);
                 },
-                onComplete: () => g.destroy()
+                onComplete: () => gfx.destroy()
             });
-        });
+        }
 
         // Všechna hovínka odlítí nahoru
-        this.poops.forEach(p => { p.vy = -420; p.vr *= -1; });
+        this.poops.forEach(p => { p.vy = -440; p.vr *= -1; });
 
-        // Po 650ms se Steve otočí zpět
-        this.tweens.add({ targets: this.player, alpha: 1, delay: 650, duration: 1,
+        // Po 800ms se Steve otočí zpět
+        this.tweens.add({ targets: this.player, alpha: 1, delay: 800, duration: 1,
             onComplete: () => this.player.setFlipX(wasFlipped) });
     }
 
@@ -367,23 +407,6 @@ class GameScene extends Phaser.Scene {
         else if (type === 'shieldBreak'){ [600,400,200].forEach((f,i) => osc(f,.12,'sawtooth',.15,i*.1)); }
         else if (type === 'levelup')    { [523,659,784,1047].forEach((f,i) => osc(f,.18,'square',.14,i*.1)); }
         else if (type === 'boost')      { osc(880,.06,'square',.08); osc(1200,.08,'square',.06,.05); }
-        else if (type === 'fart') {
-            // Šum (prd)
-            const bufSize = Math.floor(ctx.sampleRate * 0.55);
-            const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-            const data = buf.getChannelData(0);
-            for (let j = 0; j < bufSize; j++) data[j] = (Math.random() * 2 - 1);
-            const noise = ctx.createBufferSource();
-            noise.buffer = buf;
-            const ng = ctx.createGain();
-            ng.gain.setValueAtTime(0.35, t);
-            ng.gain.setValueAtTime(0.25, t + 0.15);
-            ng.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
-            noise.connect(ng); ng.connect(ctx.destination);
-            noise.start(t);
-            // Nízký bas pod šumem
-            osc(70, 0.5, 'sawtooth', 0.2);
-        }
     }
 
     // ═══ UPDATE ═══════════════════════════════════════════════════════════════
