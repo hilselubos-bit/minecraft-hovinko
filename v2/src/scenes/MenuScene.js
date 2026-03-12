@@ -72,9 +72,9 @@ class MenuScene extends Phaser.Scene {
 
     // ── Buttons ───────────────────────────────────────────────────────────────
     _buildButtons(W) {
-        this._makeBtn(W / 2, 352, '▶  HRAT',      0x4CAF50, 0x2e7d32, () => this.scene.start('GameScene'));
-        this._makeBtn(W / 2, 408, 'TABULKA',      0xFFC107, 0xF57F17, () => this._showBoard(W));
-        this._makeBtn(W / 2, 464, 'NASTAVENI',    0x7B1FA2, 0x4A148C, () => this._showSettings(W));
+        this._makeBtn(W / 2, 352, '▶  HRÁT',         0x4CAF50, 0x2e7d32, () => this.scene.start('GameScene'));
+        this._makeBtn(W / 2, 408, 'TABULKA VÍTĚZŮ', 0xFFC107, 0xF57F17, () => this._showBoard(W));
+        this._makeBtn(W / 2, 464, 'NASTAVENÍ',       0x7B1FA2, 0x4A148C, () => this._showSettings(W));
     }
 
     // ── Walking Steve ─────────────────────────────────────────────────────────
@@ -196,7 +196,7 @@ class MenuScene extends Phaser.Scene {
         ov.fillStyle(0x000000, 0.93); ov.fillRoundedRect(18, 10, W - 36, H - 20, 14);
         ov.lineStyle(4, 0xCC88FF);    ov.strokeRoundedRect(18, 10, W - 36, H - 20, 14);
 
-        T(this.add.text(W / 2, 50, 'NASTAVENI', {
+        T(this.add.text(W / 2, 50, 'NASTAVENÍ', {
             fontFamily: '"Press Start 2P", monospace', fontSize: '14px', fill: '#CC88FF'
         }).setOrigin(0.5).setDepth(D + 1));
 
