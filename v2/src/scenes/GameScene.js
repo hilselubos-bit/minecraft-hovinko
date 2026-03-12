@@ -84,11 +84,8 @@ class GameScene extends Phaser.Scene {
         this.shieldRing = this.add.graphics().setDepth(8);
         this.shieldPulse = 0;
 
-        // První power-up za 5s, pak každých 12s
-        this.time.delayedCall(5000, () => {
-            this._spawnPowerup();
-            this.time.addEvent({ delay: 12000, callback: this._spawnPowerup, callbackScope: this, loop: true });
-        });
+        // Countdown v update loopu — spolehlivější než Phaser timery
+        this._powerupCd = 5; // první za 5s
     }
 
     _spawnPowerup() {
@@ -374,6 +371,13 @@ class GameScene extends Phaser.Scene {
                 p.destroy(); this.powerups.splice(i, 1); continue;
             }
             if (p.y > this.H + 60) { p.destroy(); this.powerups.splice(i, 1); }
+        }
+
+        // Power-up countdown
+        this._powerupCd -= dt;
+        if (this._powerupCd <= 0) {
+            this._spawnPowerup();
+            this._powerupCd = 12;
         }
 
         // Parallax
