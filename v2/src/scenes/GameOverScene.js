@@ -36,6 +36,9 @@ class GameOverScene extends Phaser.Scene {
             fill: '#FFD700', stroke: '#000', strokeThickness: 2
         }).setOrigin(0.5);
 
+        // Uvolni Phaser keyboard capture aby HTML input dostal všechny klávesy
+        this.input.keyboard.disableGlobalCapture();
+
         // HTML overlay input — position:fixed nepohne canvas při otevření klávesnice
         this._showInputOverlay();
     }
@@ -79,7 +82,16 @@ class GameOverScene extends Phaser.Scene {
                     background:#4CAF50; color:#fff; border:3px solid #2e7d32;
                     border-radius:8px; cursor:pointer; letter-spacing:1px;
                 ">
-                POTVRDIT ✓
+                POTVRDIT
+            </button>
+            <button id="nameSkip"
+                style="
+                    margin-top:8px; width:100%; padding:9px 0;
+                    font-family:'Press Start 2P',monospace; font-size:10px;
+                    background:transparent; color:#888; border:2px solid #444;
+                    border-radius:8px; cursor:pointer;
+                ">
+                PRESKOCIT / MENU
             </button>
         `;
 
@@ -93,10 +105,16 @@ class GameOverScene extends Phaser.Scene {
             const val = document.getElementById('nameInput')?.value?.trim();
             if (val) this._submit(val);
         };
+        const skip = () => {
+            this._removeOverlay();
+            this.scene.start('MenuScene');
+        };
 
         document.getElementById('nameSubmit').addEventListener('click', submit);
+        document.getElementById('nameSkip').addEventListener('click', skip);
         document.getElementById('nameInput').addEventListener('keydown', e => {
             if (e.key === 'Enter') submit();
+            if (e.key === 'Escape') skip();
         });
     }
 
@@ -180,13 +198,15 @@ class GameOverScene extends Phaser.Scene {
             }).setOrigin(0.5);
         }
 
-        // Play again button
-        this._makeBtn(W / 2, H - 55, '▶ HRÁT ZNOVU', 0x4CAF50, 0x2e7d32,
-            () => this.scene.start('GameScene'));
+        // Tlačítka
+        this._makeBtn(W / 2 - 60, H - 55, '▶ ZNOVU', 0x4CAF50, 0x2e7d32,
+            () => this.scene.start('GameScene'), 100);
+        this._makeBtn(W / 2 + 70, H - 55, 'MENU', 0x1565C0, 0x0D47A1,
+            () => this.scene.start('MenuScene'), 100);
     }
 
-    _makeBtn(x, y, label, fill, border, cb) {
-        const bW = 210, bH = 46;
+    _makeBtn(x, y, label, fill, border, cb, bW = 210) {
+        const bH = 46;
         const bg = this.add.graphics();
         bg.fillStyle(fill, 1);   bg.fillRoundedRect(x - bW/2, y - bH/2, bW, bH, 10);
         bg.lineStyle(3, border); bg.strokeRoundedRect(x - bW/2, y - bH/2, bW, bH, 10);

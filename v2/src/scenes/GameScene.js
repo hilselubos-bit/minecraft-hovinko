@@ -195,8 +195,6 @@ class GameScene extends Phaser.Scene {
 
     _activateBoost() {
         this.boostSec = 3.5;
-        // Velmi jemný vizuální hint (světlý záblesk) — skoro tajný
-        this.cameras.main.flash(120, 255, 255, 255, false);
         this._sound('boost');
     }
 
