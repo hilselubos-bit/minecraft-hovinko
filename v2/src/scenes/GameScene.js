@@ -95,18 +95,17 @@ class GameScene extends Phaser.Scene {
 
     // ═══ HUD ══════════════════════════════════════════════════════════════════
     _buildHUD() {
-        const emojiStyle = { fontFamily: 'Arial, sans-serif', fontSize: '28px' };
         const labelStyle = { fontFamily: '"Press Start 2P", monospace', fontSize: '13px', fill: '#FFD700', stroke: '#000', strokeThickness: 3 };
 
         // Score
-        this.add.text(13, 12, '💩', emojiStyle).setDepth(20);
-        this.scoreTxt = this.add.text(48, 17, '0', labelStyle).setDepth(20);
+        this.add.text(13, 17, 'SK:', labelStyle).setDepth(20);
+        this.scoreTxt = this.add.text(58, 17, '0', labelStyle).setDepth(20);
 
-        // Životy — 3 samostatné text objekty s Arial emoji
+        // Životy — 3 samostatné text objekty, plain unicode ♥/♡
         this.hearts = [];
         for (let i = 0; i < 3; i++) {
             this.hearts.push(
-                this.add.text(this.W - 16 - i * 36, 12, '❤️', emojiStyle).setDepth(20)
+                this.add.text(this.W - 18 - i * 28, 17, '\u2665', { ...labelStyle, fill: '#FF3B3B' }).setDepth(20)
             );
         }
 
@@ -114,20 +113,23 @@ class GameScene extends Phaser.Scene {
         this.levelTxt = this.add.text(this.W / 2, 16, '', { ...labelStyle, fontSize: '10px', fill: '#FF7043' })
             .setOrigin(0.5, 0).setDepth(20);
 
-        // Power-up — vše Arial aby emoji fungovalo na mobilu
-        this.puTxt = this.add.text(this.W / 2, 54, '', { fontFamily: 'Arial, sans-serif', fontSize: '20px', stroke: '#000', strokeThickness: 4, fill: '#fff' })
+        // Power-up
+        this.puTxt = this.add.text(this.W / 2, 54, '', { ...labelStyle, fontSize: '11px', fill: '#fff' })
             .setOrigin(0.5, 0).setAlpha(0).setDepth(20);
     }
 
     _hudUpdate() {
         this.scoreTxt.setText(`${this.score}`);
-        this.hearts.forEach((h, i) => h.setText(i < this.lives ? '❤️' : '🖤'));
+        this.hearts.forEach((h, i) => {
+            h.setText(i < this.lives ? '\u2665' : '\u2661');
+            h.setColor(i < this.lives ? '#FF3B3B' : '#888888');
+        });
         if (this.level > 1) this.levelTxt.setText(`LVL ${this.level}`);
 
         if (this.shield) {
-            this.puTxt.setText('🛡️  ŠTÍT AKTIVNÍ').setColor('#00BFFF').setAlpha(1);
+            this.puTxt.setText('STIT AKTIVNI').setColor('#00BFFF').setAlpha(1);
         } else if (this.starSec > 0) {
-            this.puTxt.setText(`⭐  2× BODY  (${Math.ceil(this.starSec)}s)`).setColor('#FFD700').setAlpha(1);
+            this.puTxt.setText(`2x BODY (${Math.ceil(this.starSec)}s)`).setColor('#FFD700').setAlpha(1);
         } else {
             this.puTxt.setAlpha(0);
         }
@@ -166,9 +168,9 @@ class GameScene extends Phaser.Scene {
         this.tweens.add({ targets: img, scale: 1.15, duration: 400, ease: 'Back.Out' });
 
         // Blikající upozornění nahoře
-        const icon  = type === 'shield' ? '🛡️' : '⭐';
+        const label = type === 'shield' ? 'STIT PADA!' : '2x BODY PADA!';
         const color = type === 'shield' ? '#00BFFF' : '#FFD700';
-        const ann = this.add.text(x, 105, `${icon} POWER-UP PADÁ!`, {
+        const ann = this.add.text(x, 105, label, {
             fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
             fill: color, stroke: '#000', strokeThickness: 3
         }).setOrigin(0.5).setDepth(22).setAlpha(0);
@@ -216,10 +218,10 @@ class GameScene extends Phaser.Scene {
 
         if (type === 'shield') {
             this.shield = true;
-            this._showMsg('🛡️ ŠTÍT!', '#00BFFF', x, y);
+            this._showMsg('STIT!', '#00BFFF', x, y);
         } else {
             this.starSec = 8;
-            this._showMsg('⭐ 2× BODY!', '#FFD700', x, y);
+            this._showMsg('2x BODY!', '#FFD700', x, y);
         }
         this._hudUpdate();
     }
@@ -230,7 +232,7 @@ class GameScene extends Phaser.Scene {
             this.shield = false;
             this.cameras.main.flash(220, 0, 191, 255, false);
             this._sound('shieldBreak');
-            this._showMsg('🛡️ ŠTÍT ZLOMEN!', '#00BFFF', this.W / 2, this.H / 2 - 50);
+            this._showMsg('STIT ZLOMEN!', '#00BFFF', this.W / 2, this.H / 2 - 50);
             this._hudUpdate();
             return;
         }
