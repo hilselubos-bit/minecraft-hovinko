@@ -68,6 +68,7 @@ class BootScene extends Phaser.Scene {
         this._makeTree();
         this._makeMountains();
         this._makePowerups();
+        this._makeHeart();
         this.scene.start('MenuScene');
     }
 
@@ -170,7 +171,6 @@ class BootScene extends Phaser.Scene {
             const c = document.createElement('canvas');
             c.width = c.height = 52;
             const g = c.getContext('2d');
-            // Glow background
             const grad = g.createRadialGradient(26, 26, 4, 26, 26, 26);
             grad.addColorStop(0, i === 0 ? 'rgba(0,191,255,0.5)' : 'rgba(255,215,0,0.5)');
             grad.addColorStop(1, 'transparent');
@@ -179,5 +179,25 @@ class BootScene extends Phaser.Scene {
             g.fillText(emoji, 26, 28);
             this.textures.addCanvas(['powerup_shield','powerup_star'][i], c);
         });
+    }
+
+    _makeHeart() {
+        // Plné srdce (červené)
+        const make = (color, key) => {
+            const c = document.createElement('canvas');
+            c.width = c.height = 32;
+            const g = c.getContext('2d');
+            g.fillStyle = color;
+            g.beginPath();
+            g.moveTo(16, 26);
+            g.bezierCurveTo(16, 26,  4, 18,  4, 12);
+            g.bezierCurveTo( 4,  6, 10,  4, 16, 10);
+            g.bezierCurveTo(22,  4, 28,  6, 28, 12);
+            g.bezierCurveTo(28, 18, 16, 26, 16, 26);
+            g.closePath(); g.fill();
+            this.textures.addCanvas(key, c);
+        };
+        make('#FF3B3B', 'heart_full');
+        make('#444444', 'heart_empty');
     }
 }

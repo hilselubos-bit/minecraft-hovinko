@@ -95,20 +95,37 @@ class GameScene extends Phaser.Scene {
 
     // ═══ HUD ══════════════════════════════════════════════════════════════════
     _buildHUD() {
-        const s = { fontFamily: '"Press Start 2P", monospace', fontSize: '13px', fill: '#FFD700', stroke: '#000', strokeThickness: 3 };
-        this.scoreTxt  = this.add.text(16, 16, '💩 0', s).setDepth(20);
-        this.livesTxt  = this.add.text(this.W - 16, 16, '❤️❤️❤️', { ...s, fill: '#ff4444' }).setOrigin(1, 0).setDepth(20);
-        this.levelTxt  = this.add.text(this.W / 2, 16, '', { ...s, fontSize: '10px', fill: '#FF7043' }).setOrigin(0.5, 0).setDepth(20);
-        this.puTxt     = this.add.text(this.W / 2, 56, '', { ...s, fontSize: '11px', fill: '#fff' }).setOrigin(0.5, 0).setAlpha(0).setDepth(20);
+        const ps = { fontFamily: '"Press Start 2P", monospace', stroke: '#000', strokeThickness: 3 };
+
+        // Score — poop emoji přes Arial, číslo přes Press Start 2P
+        this.scoreEmoji = this.add.text(14, 14, '💩', { fontFamily: 'Arial', fontSize: '26px' }).setDepth(20);
+        this.scoreTxt   = this.add.text(46, 18, '0', { ...ps, fontSize: '13px', fill: '#FFD700' }).setDepth(20);
+
+        // Životy — 3 obrázky srdíček
+        this.hearts = [];
+        for (let i = 0; i < 3; i++) {
+            this.hearts.push(
+                this.add.image(this.W - 18 - i * 34, 28, 'heart_full').setScale(1.1).setDepth(20)
+            );
+        }
+
+        // Level
+        this.levelTxt = this.add.text(this.W / 2, 16, '', { ...ps, fontSize: '10px', fill: '#FF7043' })
+            .setOrigin(0.5, 0).setDepth(20);
+
+        // Power-up status — Arial pro emoji, Press Start 2P pro text
+        this.puTxt = this.add.text(this.W / 2, 56, '', { fontFamily: 'Arial', fontSize: '18px', stroke: '#000', strokeThickness: 3, fill: '#fff' })
+            .setOrigin(0.5, 0).setAlpha(0).setDepth(20);
     }
 
     _hudUpdate() {
-        this.scoreTxt.setText(`💩 ${this.score}`);
-        this.livesTxt.setText([...Array(3)].map((_, i) => i < this.lives ? '❤️' : '🖤').join(''));
+        this.scoreTxt.setText(`${this.score}`);
+        // Srdíčka
+        this.hearts.forEach((h, i) => h.setTexture(i < this.lives ? 'heart_full' : 'heart_empty'));
         if (this.level > 1) this.levelTxt.setText(`LVL ${this.level} 🚀`);
 
         if (this.shield) {
-            this.puTxt.setText('🛡️ ŠTÍT AKTIVNÍ').setStyle({ fill: '#00BFFF' }).setAlpha(1);
+            this.puTxt.setText('🛡️  ŠTÍT AKTIVNÍ').setStyle({ fill: '#00BFFF' }).setAlpha(1);
         } else if (this.starSec > 0) {
             this.puTxt.setText(`⭐  2× BODY  (${Math.ceil(this.starSec)}s)`).setStyle({ fill: '#FFD700' }).setAlpha(1);
         } else {
