@@ -167,18 +167,54 @@ class BootScene extends Phaser.Scene {
     }
 
     _makePowerups() {
-        ['🛡️', '⭐'].forEach((emoji, i) => {
-            const c = document.createElement('canvas');
-            c.width = c.height = 52;
-            const g = c.getContext('2d');
-            const grad = g.createRadialGradient(26, 26, 4, 26, 26, 26);
-            grad.addColorStop(0, i === 0 ? 'rgba(0,191,255,0.5)' : 'rgba(255,215,0,0.5)');
-            grad.addColorStop(1, 'transparent');
-            g.fillStyle = grad; g.fillRect(0, 0, 52, 52);
-            g.font = '36px serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-            g.fillText(emoji, 26, 28);
-            this.textures.addCanvas(['powerup_shield','powerup_star'][i], c);
-        });
+        // Shield — modrý štít (geometrický tvar, žádné emoji)
+        const cs = document.createElement('canvas');
+        cs.width = cs.height = 52;
+        const gs = cs.getContext('2d');
+        gs.fillStyle = '#00BFFF';
+        gs.beginPath();
+        gs.moveTo(26, 4);
+        gs.lineTo(46, 12);
+        gs.lineTo(46, 28);
+        gs.quadraticCurveTo(46, 46, 26, 50);
+        gs.quadraticCurveTo(6, 46, 6, 28);
+        gs.lineTo(6, 12);
+        gs.closePath();
+        gs.fill();
+        gs.fillStyle = '#ffffff';
+        gs.beginPath();
+        gs.moveTo(26, 12);
+        gs.lineTo(38, 17);
+        gs.lineTo(38, 27);
+        gs.quadraticCurveTo(38, 38, 26, 42);
+        gs.quadraticCurveTo(14, 38, 14, 27);
+        gs.lineTo(14, 17);
+        gs.closePath();
+        gs.fill();
+        this.textures.addCanvas('powerup_shield', cs);
+
+        // Star — žlutá hvězda (5 cípů, geometricky)
+        const ct = document.createElement('canvas');
+        ct.width = ct.height = 52;
+        const gt = ct.getContext('2d');
+        gt.fillStyle = '#FFD700';
+        gt.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const outerAngle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+            const innerAngle = outerAngle + (2 * Math.PI / 10);
+            const ox = 26 + 22 * Math.cos(outerAngle);
+            const oy = 26 + 22 * Math.sin(outerAngle);
+            const ix = 26 + 9 * Math.cos(innerAngle);
+            const iy = 26 + 9 * Math.sin(innerAngle);
+            i === 0 ? gt.moveTo(ox, oy) : gt.lineTo(ox, oy);
+            gt.lineTo(ix, iy);
+        }
+        gt.closePath();
+        gt.fill();
+        gt.strokeStyle = '#E65100';
+        gt.lineWidth = 2;
+        gt.stroke();
+        this.textures.addCanvas('powerup_star', ct);
     }
 
     _makeHeart() {
