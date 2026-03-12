@@ -84,10 +84,10 @@ class GameScene extends Phaser.Scene {
         this.shieldRing = this.add.graphics().setDepth(8);
         this.shieldPulse = 0;
 
-        // První power-up za 10s, pak každých 15s
-        this.time.delayedCall(10000, () => {
+        // První power-up za 5s, pak každých 12s
+        this.time.delayedCall(5000, () => {
             this._spawnPowerup();
-            this.time.addEvent({ delay: 15000, callback: this._spawnPowerup, callbackScope: this, loop: true });
+            this.time.addEvent({ delay: 12000, callback: this._spawnPowerup, callbackScope: this, loop: true });
         });
     }
 
@@ -96,15 +96,23 @@ class GameScene extends Phaser.Scene {
         const type = Math.random() < 0.5 ? 'shield' : 'star';
         const img = this.add.image(Phaser.Math.Between(50, this.W - 50), -50, `powerup_${type}`)
             .setScale(0).setDepth(5);
-        img.vy   = 90 + Math.random() * 30;
-        img.vr   = Phaser.Math.FloatBetween(-1.2, 1.2);
+        img.vy   = 60 + Math.random() * 20;  // pomalejší pád
+        img.vr   = Phaser.Math.FloatBetween(-1.0, 1.0);
         img.type = type;
         this.powerups.push(img);
-        // Pop-in + hover tween
         // Pop-in + scale pulse (nesmí animovat y — konflikt s p.y v update)
-        this.tweens.add({ targets: img, scale: 1, duration: 300, ease: 'Back.Out',
-            onComplete: () => this.tweens.add({ targets: img, scaleX: 1.18, scaleY: 1.18, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
+        this.tweens.add({ targets: img, scale: 1.1, duration: 350, ease: 'Back.Out',
+            onComplete: () => this.tweens.add({ targets: img, scaleX: 1.3, scaleY: 1.3, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
         });
+        // Upozornění nahoře obrazovky
+        const icon  = type === 'shield' ? '🛡️' : '⭐';
+        const color = type === 'shield' ? '#00BFFF' : '#FFD700';
+        const hint  = this.add.text(img.x, 108, `${icon} POWER-UP!`, {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '11px',
+            fill: color, stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(22).setAlpha(0);
+        this.tweens.add({ targets: hint, alpha: 1, duration: 200,
+            yoyo: true, hold: 1400, onComplete: () => hint.destroy() });
     }
 
     _activatePowerup(type, x, y) {
