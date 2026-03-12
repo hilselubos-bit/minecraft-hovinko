@@ -24,6 +24,12 @@ class GameScene extends Phaser.Scene {
         this.starSec       = 0;     // kolik sekund zbývá 2× bonus
         this.shieldPulse   = 0;
 
+        // Tajný turbo boost
+        this.boostSec      = 0;
+        this._lastTapTime  = 0;
+        this._lastKeyTime  = 0;
+        this._lastKeyCode  = '';
+
         // Objekty
         this.poops    = [];
         this.powerups = [];
@@ -140,9 +146,34 @@ class GameScene extends Phaser.Scene {
         this.cursors  = this.input.keyboard.createCursorKeys();
         this.wasd     = this.input.keyboard.addKeys('A,D');
         this.touchDir = 0;
-        this.input.on('pointerdown', p => { this.touchDir = p.x < this.player.x ? -1 : 1; });
+
+        this.input.on('pointerdown', p => {
+            // Double-tap → turbo
+            const now = this.time.now;
+            if (now - this._lastTapTime < 300) this._activateBoost();
+            this._lastTapTime = now;
+            this.touchDir = p.x < this.player.x ? -1 : 1;
+        });
         this.input.on('pointermove', p => { if (p.isDown) this.touchDir = p.x < this.player.x ? -1 : 1; });
         this.input.on('pointerup',   () => { this.touchDir = 0; });
+
+        // Double-arrow → turbo
+        this.input.keyboard.on('keydown', e => {
+            const k = e.code;
+            if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'KeyA' || k === 'KeyD') {
+                const now = this.time.now;
+                if (k === this._lastKeyCode && now - this._lastKeyTime < 300) this._activateBoost();
+                this._lastKeyCode = k;
+                this._lastKeyTime = now;
+            }
+        });
+    }
+
+    _activateBoost() {
+        this.boostSec = 3.5;
+        // Velmi jemný vizuální hint (světlý záblesk) — skoro tajný
+        this.cameras.main.flash(120, 255, 255, 255, false);
+        this._sound('boost');
     }
 
     // ═══ SPAWN ════════════════════════════════════════════════════════════════
@@ -335,6 +366,7 @@ class GameScene extends Phaser.Scene {
         else if (type === 'powerup')    { [523,784,1047,1318].forEach((f,i) => osc(f,.15,'square',.15,i*.08)); }
         else if (type === 'shieldBreak'){ [600,400,200].forEach((f,i) => osc(f,.12,'sawtooth',.15,i*.1)); }
         else if (type === 'levelup')    { [523,659,784,1047].forEach((f,i) => osc(f,.18,'square',.14,i*.1)); }
+        else if (type === 'boost')      { osc(880,.06,'square',.08); osc(1200,.08,'square',.06,.05); }
         else if (type === 'fart') {
             // Šum (prd)
             const bufSize = Math.floor(ctx.sampleRate * 0.55);
@@ -367,10 +399,12 @@ class GameScene extends Phaser.Scene {
         }
 
         // ── Hráč ────────────────────────────────────────────────────────────
+        if (this.boostSec > 0) this.boostSec -= dt;
+        const spd = this.boostSec > 0 ? 560 : 310;
         let vx = 0;
-        if (this.cursors.left.isDown  || this.wasd.A.isDown) vx = -310;
-        if (this.cursors.right.isDown || this.wasd.D.isDown) vx =  310;
-        if (!vx && this.touchDir) vx = this.touchDir * 310;
+        if (this.cursors.left.isDown  || this.wasd.A.isDown) vx = -spd;
+        if (this.cursors.right.isDown || this.wasd.D.isDown) vx =  spd;
+        if (!vx && this.touchDir) vx = this.touchDir * spd;
         this.player.x = Phaser.Math.Clamp(this.player.x + vx * dt, 30, this.W - 30);
         this.player.anims.play(vx ? 'walk' : 'idle', true);
         if (vx) this.player.setFlipX(vx < 0);

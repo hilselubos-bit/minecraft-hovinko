@@ -222,18 +222,60 @@ class BootScene extends Phaser.Scene {
         const c = document.createElement('canvas');
         c.width = c.height = 52;
         const g = c.getContext('2d');
-        // Levá hýžď
-        g.fillStyle = '#FFAA88';
-        g.beginPath(); g.arc(17, 32, 15, 0, Math.PI * 2); g.fill();
+
+        // Levá hýžď — bezier pro přirozenější tvar
+        g.fillStyle = '#F4A574';
+        g.beginPath();
+        g.moveTo(26, 10);
+        g.bezierCurveTo(26, 10, 5, 13, 4, 30);
+        g.bezierCurveTo(3, 44, 11, 50, 22, 50);
+        g.bezierCurveTo(25, 50, 26, 48, 26, 46);
+        g.lineTo(26, 10);
+        g.fill();
+
         // Pravá hýžď
-        g.beginPath(); g.arc(35, 32, 15, 0, Math.PI * 2); g.fill();
+        g.beginPath();
+        g.moveTo(26, 10);
+        g.bezierCurveTo(26, 10, 47, 13, 48, 30);
+        g.bezierCurveTo(49, 44, 41, 50, 30, 50);
+        g.bezierCurveTo(27, 50, 26, 48, 26, 46);
+        g.lineTo(26, 10);
+        g.fill();
+
+        // Stín dole pro objem
+        g.fillStyle = 'rgba(150,80,40,0.18)';
+        g.beginPath();
+        g.ellipse(17, 44, 11, 5, 0, 0, Math.PI * 2); g.fill();
+        g.beginPath();
+        g.ellipse(35, 44, 11, 5, 0, 0, Math.PI * 2); g.fill();
+
+        // Světlo nahoře (highlight)
+        g.fillStyle = 'rgba(255,255,255,0.32)';
+        g.beginPath(); g.ellipse(16, 22, 5, 8, -0.2, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.ellipse(36, 22, 5, 8,  0.2, 0, Math.PI * 2); g.fill();
+
         // Obrys
-        g.strokeStyle = '#CC7755'; g.lineWidth = 2;
-        g.beginPath(); g.arc(17, 32, 15, 0, Math.PI * 2); g.stroke();
-        g.beginPath(); g.arc(35, 32, 15, 0, Math.PI * 2); g.stroke();
+        g.strokeStyle = '#C07040'; g.lineWidth = 1.5;
+        g.beginPath();
+        g.moveTo(26, 10);
+        g.bezierCurveTo(26, 10, 5, 13, 4, 30);
+        g.bezierCurveTo(3, 44, 11, 50, 22, 50);
+        g.bezierCurveTo(25, 50, 26, 48, 26, 46);
+        g.stroke();
+        g.beginPath();
+        g.moveTo(26, 10);
+        g.bezierCurveTo(26, 10, 47, 13, 48, 30);
+        g.bezierCurveTo(49, 44, 41, 50, 30, 50);
+        g.bezierCurveTo(27, 50, 26, 48, 26, 46);
+        g.stroke();
+
         // Rýha
-        g.beginPath(); g.moveTo(26, 17); g.quadraticCurveTo(23, 32, 26, 47);
-        g.lineWidth = 2.5; g.stroke();
+        g.strokeStyle = '#B06030'; g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(26, 10);
+        g.quadraticCurveTo(24, 28, 26, 46);
+        g.stroke();
+
         this.textures.addCanvas('powerup_butt', c);
     }
 
