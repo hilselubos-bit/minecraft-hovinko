@@ -5,65 +5,82 @@ class GameScene extends Phaser.Scene {
         this.W = this.scale.width;
         this.H = this.scale.height;
 
-        this.score      = 0;
-        this.lives      = 3;
-        this.dropSpeed  = 160;
-        this.spawnDelay = 1200;
-        this.level      = 1;
-        this.gameOver   = false;
+        // ── Herní stav ────────────────────────────────────────────────────────
+        this.score     = 0;
+        this.lives     = 3;
+        this.level     = 1;
+        this.isOver    = false;
+        this.goDelay   = 0;
+
+        // Poop spawner (čistě v update loopu)
+        this.poopInt   = 1.2;   // interval spawn [s]
+        this.poopCd    = 1.2;   // odpočet do spawnu
+        this.dropSpeed = 160;   // základní rychlost pádu
+
+        // Power-up stav (vše v update loopu — žádné Phaser timery)
+        this.puCd          = 6;     // odpočet do prvního power-upu [s]
+        this.puInterval    = 13;    // interval mezi spawny [s]
+        this.shield        = false; // štít aktivní
+        this.starSec       = 0;     // kolik sekund zbývá 2× bonus
+        this.shieldPulse   = 0;
+
+        // Objekty
+        this.poops    = [];
+        this.powerups = [];
 
         this._buildBg();
         this._buildPlayer();
-        this._buildParticles();
-        this._buildPowerups();
+        this._buildFx();
         this._buildHUD();
         this._buildInput();
-        this._startSpawner();
-
         this._audioCtx = null;
     }
 
-    // ── Background (parallax layers) ─────────────────────────────────────────
+    // ═══ POZADÍ ═══════════════════════════════════════════════════════════════
     _buildBg() {
-        // Sky gradient
+        // Obloha
         const sky = this.add.graphics();
         sky.fillGradientStyle(0x5BB8FF, 0x5BB8FF, 0xB8E4FF, 0xB8E4FF, 1);
         sky.fillRect(0, 0, this.W, this.H);
 
-        this.add.image(75, 65, 'sun').setScale(1.15).setDepth(0);
+        // Slunce
+        this.add.image(75, 65, 'sun').setScale(1.2).setDepth(1);
 
-        // Mountains (slow parallax via tileSprite)
+        // Hory — pomalý parallax
         this.mtns = this.add.tileSprite(0, this.H - 222, this.W, 130, 'mountains')
-            .setOrigin(0, 0).setAlpha(0.78).setDepth(1);
+            .setOrigin(0, 0).setAlpha(0.80).setDepth(2);
 
-        // Clouds — 2 far, 2 near at different speeds & alphas
-        this.clouds = [
-            Object.assign(this.add.image( 90, 58, 'cloud').setAlpha(0.65).setScale(0.9).setDepth(2), { spd: 0.10 }),
-            Object.assign(this.add.image(310, 38, 'cloud').setAlpha(0.60).setScale(1.2).setDepth(2), { spd: 0.07 }),
-            Object.assign(this.add.image(180, 78, 'cloud').setAlpha(0.90).setScale(0.75).setDepth(3), { spd: 0.22 }),
-            Object.assign(this.add.image(420, 62, 'cloud').setAlpha(0.88).setScale(1.0).setDepth(3), { spd: 0.18 }),
+        // Mraky — 2 daleké (pomalé) + 2 blízké (rychlejší)
+        this.cloudsF = [
+            Object.assign(this.add.image( 80, 55, 'cloud').setAlpha(0.60).setScale(1.1).setDepth(3),  { spd: 0.11 }),
+            Object.assign(this.add.image(300, 36, 'cloud').setAlpha(0.55).setScale(1.4).setDepth(3),  { spd: 0.07 }),
+            Object.assign(this.add.image(500, 68, 'cloud').setAlpha(0.62).setScale(0.9).setDepth(3),  { spd: 0.09 }),
+        ];
+        this.cloudsN = [
+            Object.assign(this.add.image(155, 82, 'cloud').setAlpha(0.88).setScale(0.72).setDepth(4), { spd: 0.24 }),
+            Object.assign(this.add.image(390, 60, 'cloud').setAlpha(0.92).setScale(1.05).setDepth(4), { spd: 0.20 }),
         ];
 
-        // Trees
-        this.add.image(22,       this.H - 128, 'tree').setDepth(4);
-        this.add.image(this.W-22,this.H - 125, 'tree').setFlipX(true).setDepth(4);
-        this.add.image(this.W-68,this.H - 120, 'tree').setScale(0.85).setDepth(4);
+        // Stromy
+        this.add.image(24,        this.H - 128, 'tree').setDepth(5);
+        this.add.image(this.W-24, this.H - 125, 'tree').setFlipX(true).setDepth(5);
+        this.add.image(this.W-72, this.H - 118, 'tree').setScale(0.82).setDepth(5);
 
-        // Ground
-        this.add.tileSprite(0, this.H - 100, this.W, 100, 'ground').setOrigin(0, 0).setDepth(4);
+        // Země
+        this.add.tileSprite(0, this.H - 100, this.W, 100, 'ground').setOrigin(0, 0).setDepth(5);
     }
 
-    // ── Player ────────────────────────────────────────────────────────────────
+    // ═══ HRÁČ ═════════════════════════════════════════════════════════════════
     _buildPlayer() {
         this.player = this.add.sprite(this.W / 2, this.H - 103, 'steve')
             .setScale(1.3).setDepth(6);
         this.player.anims.play('idle');
     }
 
-    // ── Particles ─────────────────────────────────────────────────────────────
-    _buildParticles() {
+    // ═══ EFEKTY ═══════════════════════════════════════════════════════════════
+    _buildFx() {
         this.emitter = this.add.particles(0, 0, 'particle', {
-            speed:    { min: 120, max: 300 },
+            speed:    { min: 130, max: 310 },
             angle:    { min: 0, max: 360 },
             scale:    { start: 1.4, end: 0 },
             lifespan: 650,
@@ -71,91 +88,35 @@ class GameScene extends Phaser.Scene {
             quantity: 0,
             emitting: false
         }).setDepth(12);
+
+        // Kruh štítu (kreslí se každý frame)
+        this.shieldGfx = this.add.graphics().setDepth(8);
     }
 
-    // ── Power-ups ─────────────────────────────────────────────────────────────
-    _buildPowerups() {
-        this.powerups    = [];
-        this.shieldActive = false;
-        this.starActive   = false;
-        this.starEndTime  = 0;
-
-        // Shield ring (redrawn each frame when active)
-        this.shieldRing = this.add.graphics().setDepth(8);
-        this.shieldPulse = 0;
-
-        // Countdown v update loopu — spolehlivější než Phaser timery
-        this._powerupCd = 5; // první za 5s
-    }
-
-    _spawnPowerup() {
-        if (this.gameOver) return;
-        const type = Math.random() < 0.5 ? 'shield' : 'star';
-        const img = this.add.image(Phaser.Math.Between(50, this.W - 50), -50, `powerup_${type}`)
-            .setScale(0).setDepth(5);
-        img.vy   = 60 + Math.random() * 20;  // pomalejší pád
-        img.vr   = Phaser.Math.FloatBetween(-1.0, 1.0);
-        img.type = type;
-        this.powerups.push(img);
-        // Pop-in + scale pulse (nesmí animovat y — konflikt s p.y v update)
-        this.tweens.add({ targets: img, scale: 1.1, duration: 350, ease: 'Back.Out',
-            onComplete: () => this.tweens.add({ targets: img, scaleX: 1.3, scaleY: 1.3, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.InOut' })
-        });
-        // Upozornění nahoře obrazovky
-        const icon  = type === 'shield' ? '🛡️' : '⭐';
-        const color = type === 'shield' ? '#00BFFF' : '#FFD700';
-        const hint  = this.add.text(img.x, 108, `${icon} POWER-UP!`, {
-            fontFamily: '"Press Start 2P", monospace', fontSize: '11px',
-            fill: color, stroke: '#000', strokeThickness: 3
-        }).setOrigin(0.5).setDepth(22).setAlpha(0);
-        this.tweens.add({ targets: hint, alpha: 1, duration: 200,
-            yoyo: true, hold: 1400, onComplete: () => hint.destroy() });
-    }
-
-    _activatePowerup(type, x, y) {
-        this.emitter.setPosition(x, y);
-        this.emitter.explode(20);
-        this._sound('powerup');
-
-        const label = type === 'shield' ? '🛡️  ŠTÍT!' : '⭐  2× BODY!';
-        const color = type === 'shield' ? '#00BFFF' : '#FFD700';
-        const pop = this.add.text(x, y - 10, label, {
-            fontFamily: '"Press Start 2P", monospace', fontSize: '13px',
-            fill: color, stroke: '#000', strokeThickness: 3
-        }).setOrigin(0.5).setDepth(16);
-        this.tweens.add({ targets: pop, y: y - 80, alpha: 0, duration: 1100, onComplete: () => pop.destroy() });
-
-        if (type === 'shield') {
-            this.shieldActive = true;
-            this.powerupTxt.setText('🛡️ ŠTÍT').setAlpha(1).setStyle({ fill: '#00BFFF' });
-        } else {
-            this.starActive  = true;
-            this.starEndTime = this.time.now + 8000;
-            this.powerupTxt.setStyle({ fill: '#FFD700' }).setAlpha(1);
-            this.time.delayedCall(8000, () => { this.starActive = false; this.powerupTxt.setAlpha(0); });
-        }
-    }
-
-    // ── HUD ───────────────────────────────────────────────────────────────────
+    // ═══ HUD ══════════════════════════════════════════════════════════════════
     _buildHUD() {
         const s = { fontFamily: '"Press Start 2P", monospace', fontSize: '13px', fill: '#FFD700', stroke: '#000', strokeThickness: 3 };
-        this.scoreTxt   = this.add.text(16, 16, '💩 0', s).setDepth(20);
-        this.livesTxt   = this.add.text(this.W - 16, 16, '❤️❤️❤️', { ...s, fill: '#ff4444' }).setOrigin(1, 0).setDepth(20);
-        this.levelTxt   = this.add.text(this.W / 2, 16, '', { ...s, fontSize: '10px', fill: '#FF7043' }).setOrigin(0.5, 0).setDepth(20);
-        this.powerupTxt = this.add.text(this.W / 2, 58, '', { ...s, fontSize: '11px', fill: '#00BFFF' }).setOrigin(0.5, 0).setAlpha(0).setDepth(20);
+        this.scoreTxt  = this.add.text(16, 16, '💩 0', s).setDepth(20);
+        this.livesTxt  = this.add.text(this.W - 16, 16, '❤️❤️❤️', { ...s, fill: '#ff4444' }).setOrigin(1, 0).setDepth(20);
+        this.levelTxt  = this.add.text(this.W / 2, 16, '', { ...s, fontSize: '10px', fill: '#FF7043' }).setOrigin(0.5, 0).setDepth(20);
+        this.puTxt     = this.add.text(this.W / 2, 56, '', { ...s, fontSize: '11px', fill: '#fff' }).setOrigin(0.5, 0).setAlpha(0).setDepth(20);
     }
 
-    _refreshHUD() {
+    _hudUpdate() {
         this.scoreTxt.setText(`💩 ${this.score}`);
-        this.livesTxt.setText([...Array(3)].map((_,i) => i < this.lives ? '❤️' : '🖤').join(''));
+        this.livesTxt.setText([...Array(3)].map((_, i) => i < this.lives ? '❤️' : '🖤').join(''));
         if (this.level > 1) this.levelTxt.setText(`LVL ${this.level} 🚀`);
-        if (this.starActive) {
-            const rem = Math.max(0, Math.ceil((this.starEndTime - this.time.now) / 1000));
-            this.powerupTxt.setText(`⭐  2× BODY  (${rem}s)`);
+
+        if (this.shield) {
+            this.puTxt.setText('🛡️ ŠTÍT AKTIVNÍ').setStyle({ fill: '#00BFFF' }).setAlpha(1);
+        } else if (this.starSec > 0) {
+            this.puTxt.setText(`⭐  2× BODY  (${Math.ceil(this.starSec)}s)`).setStyle({ fill: '#FFD700' }).setAlpha(1);
+        } else {
+            this.puTxt.setAlpha(0);
         }
     }
 
-    // ── Input ─────────────────────────────────────────────────────────────────
+    // ═══ VSTUP ════════════════════════════════════════════════════════════════
     _buildInput() {
         this.cursors  = this.input.keyboard.createCursorKeys();
         this.wasd     = this.input.keyboard.addKeys('A,D');
@@ -165,223 +126,234 @@ class GameScene extends Phaser.Scene {
         this.input.on('pointerup',   () => { this.touchDir = 0; });
     }
 
-    // ── Spawner ───────────────────────────────────────────────────────────────
-    _startSpawner() {
-        this.poops = [];
-        this.spawnEvent = this.time.addEvent({
-            delay: this.spawnDelay, callback: this._spawnPoop,
-            callbackScope: this, loop: true
-        });
-    }
-
+    // ═══ SPAWN ════════════════════════════════════════════════════════════════
     _spawnPoop() {
-        if (this.gameOver) return;
-        const img = this.add.image(Phaser.Math.Between(40, this.W - 40), -40, 'poop')
-            .setScale(0).setDepth(5);
-        img.vy     = this.dropSpeed + Phaser.Math.Between(0, 60);
+        const img = this.add.image(Phaser.Math.Between(40, this.W - 40), -42, 'poop')
+            .setScale(0).setDepth(7);
+        img.vy     = this.dropSpeed + Phaser.Math.Between(0, 55);
         img.vr     = Phaser.Math.FloatBetween(-1.8, 1.8);
         img.wobble = Math.random() * Math.PI * 2;
         this.poops.push(img);
-        this.tweens.add({ targets: img, scale: 1, duration: 220, ease: 'Back.Out' });
+        this.tweens.add({ targets: img, scale: 1, duration: 200, ease: 'Back.Out' });
     }
 
-    // ── Catch / Miss / Level Up ───────────────────────────────────────────────
-    _catch(poop) {
-        const x = poop.x, y = poop.y;
-        poop.destroy();
-        this.poops.splice(this.poops.indexOf(poop), 1);
+    _spawnPowerup() {
+        const type = Math.random() < 0.5 ? 'shield' : 'star';
+        const x    = Phaser.Math.Between(55, this.W - 55);
+        const img  = this.add.image(x, -55, `powerup_${type}`).setScale(0).setDepth(7);
+        img.vy     = 62 + Math.random() * 22;
+        img.type   = type;
+        this.powerups.push(img);
 
-        this.emitter.setPosition(x, y);
-        this.emitter.explode(this.starActive ? 30 : 20);
+        // Pop-in (pouze scale — žádná animace y!)
+        this.tweens.add({ targets: img, scale: 1.15, duration: 400, ease: 'Back.Out' });
 
-        const pts = this.starActive ? 2 : 1;
+        // Blikající upozornění nahoře
+        const icon  = type === 'shield' ? '🛡️' : '⭐';
+        const color = type === 'shield' ? '#00BFFF' : '#FFD700';
+        const ann = this.add.text(x, 105, `${icon} POWER-UP PADÁ!`, {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
+            fill: color, stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(22).setAlpha(0);
+        this.tweens.add({
+            targets: ann, alpha: 1, duration: 150,
+            yoyo: true, hold: 1600, repeat: 1,
+            onComplete: () => ann.destroy()
+        });
+    }
+
+    // ═══ CHYCENÍ / ZTRÁTA ═════════════════════════════════════════════════════
+    _catchPoop(p) {
+        const x = p.x, y = p.y;
+        p.destroy();
+        this.poops.splice(this.poops.indexOf(p), 1);
+
+        const pts = this.starSec > 0 ? 2 : 1;
         this.score += pts;
-        this._refreshHUD();
         this._sound('catch');
 
-        // Score popup
+        this.emitter.setPosition(x, y);
+        this.emitter.explode(pts === 2 ? 30 : 20);
+
+        // Popup +1 / +2
         const pop = this.add.text(x, y - 10, `+${pts} 💩`, {
             fontFamily: '"Press Start 2P", monospace', fontSize: '15px',
-            fill: this.starActive ? '#FFD700' : '#fff', stroke: '#000', strokeThickness: 3
+            fill: pts === 2 ? '#FFD700' : '#ffffff', stroke: '#000', strokeThickness: 3
         }).setOrigin(0.5).setDepth(15);
-        this.tweens.add({ targets: pop, y: y - 80, alpha: 0, duration: 900, ease: 'Power2', onComplete: () => pop.destroy() });
+        this.tweens.add({ targets: pop, y: y - 85, alpha: 0, duration: 850, ease: 'Power2',
+            onComplete: () => pop.destroy() });
 
         if (this.score % 10 === 0) this._levelUp();
+        this._hudUpdate();
+    }
+
+    _catchPowerup(p) {
+        const x = p.x, y = p.y;
+        const type = p.type;
+        p.destroy();
+        this.powerups.splice(this.powerups.indexOf(p), 1);
+
+        this.emitter.setPosition(x, y);
+        this.emitter.explode(25);
+        this._sound('powerup');
+
+        if (type === 'shield') {
+            this.shield = true;
+            this._showMsg('🛡️ ŠTÍT!', '#00BFFF', x, y);
+        } else {
+            this.starSec = 8;
+            this._showMsg('⭐ 2× BODY!', '#FFD700', x, y);
+        }
+        this._hudUpdate();
     }
 
     _miss() {
-        if (this.shieldActive) {
-            // Shield absorbs the hit
-            this.shieldActive = false;
-            this.powerupTxt.setAlpha(0);
-            this.cameras.main.flash(200, 0, 191, 255, false);
+        if (this.shield) {
+            // Štít absorbuje zásah
+            this.shield = false;
+            this.cameras.main.flash(220, 0, 191, 255, false);
             this._sound('shieldBreak');
-            const msg = this.add.text(this.W / 2, this.H / 2 - 40, '🛡️ ŠTÍT ZLOMEN!', {
-                fontFamily: '"Press Start 2P", monospace', fontSize: '14px',
-                fill: '#00BFFF', stroke: '#000', strokeThickness: 3
-            }).setOrigin(0.5).setDepth(25);
-            this.tweens.add({ targets: msg, alpha: 0, delay: 800, duration: 400, onComplete: () => msg.destroy() });
+            this._showMsg('🛡️ ŠTÍT ZLOMEN!', '#00BFFF', this.W / 2, this.H / 2 - 50);
+            this._hudUpdate();
             return;
         }
-
         this.lives--;
-        this._refreshHUD();
         this.cameras.main.shake(280, 0.013);
         this.cameras.main.flash(180, 255, 0, 0, false);
         this._sound('miss');
-
-        // Lives pulse animation
-        this.tweens.add({ targets: this.livesTxt, scaleX: 1.4, scaleY: 1.4, duration: 100, yoyo: true });
+        this.tweens.add({ targets: this.livesTxt, scaleX: 1.4, scaleY: 1.4, duration: 90, yoyo: true });
+        this._hudUpdate();
 
         if (this.lives <= 0) {
-            this.gameOver = true;
-            this.spawnEvent.remove();
-            this.time.delayedCall(900, () => this.scene.start('GameOverScene', { score: this.score }));
+            this.isOver  = true;
+            this.goDelay = 0.9;
         }
     }
 
     _levelUp() {
         this.level++;
-        this.dropSpeed  += 28;
-        this.spawnDelay  = Math.max(380, this.spawnDelay - 80);
-        this.spawnEvent.reset({ delay: this.spawnDelay, callback: this._spawnPoop, callbackScope: this, loop: true });
+        this.dropSpeed += 28;
+        this.poopInt    = Math.max(0.38, this.poopInt - 0.08);
         this._sound('levelup');
 
-        const banner = this.add.text(this.W / 2, this.H / 2 - 60,
+        const b = this.add.text(this.W / 2, this.H / 2 - 65,
             `LEVEL ${this.level}\nRYCHLEJI! 🚀`, {
                 fontFamily: '"Press Start 2P", monospace', fontSize: '20px',
                 fill: '#FFD700', stroke: '#E65100', strokeThickness: 4, align: 'center'
             }
         ).setOrigin(0.5).setScale(0.4).setAlpha(0).setDepth(30);
-
-        this.tweens.chain({
-            targets: banner,
-            tweens: [
-                { alpha: 1, scale: 1.05, duration: 300, ease: 'Back.Out' },
-                { scale: 1, duration: 80 },
-                { alpha: 0, y: banner.y - 40, delay: 900, duration: 400, onComplete: () => banner.destroy() }
-            ]
-        });
+        this.tweens.chain({ targets: b, tweens: [
+            { alpha: 1, scale: 1.05, duration: 280, ease: 'Back.Out' },
+            { scale: 1, duration: 70 },
+            { alpha: 0, y: b.y - 40, delay: 900, duration: 380, onComplete: () => b.destroy() }
+        ]});
     }
 
-    // ── Audio ─────────────────────────────────────────────────────────────────
+    _showMsg(txt, color, x, y) {
+        const m = this.add.text(x, y - 10, txt, {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '14px',
+            fill: color, stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(16);
+        this.tweens.add({ targets: m, y: y - 90, alpha: 0, duration: 1100,
+            onComplete: () => m.destroy() });
+    }
+
+    // ═══ ZVUK ═════════════════════════════════════════════════════════════════
     _sound(type) {
         if (!this._audioCtx) {
             try { this._audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return; }
         }
         const ctx = this._audioCtx, t = ctx.currentTime;
-        const gain = ctx.createGain();
-        gain.connect(ctx.destination);
 
-        const tone = (freq, dur, type = 'square', vol = 0.15) => {
-            const o = ctx.createOscillator(); o.type = type; o.connect(gain);
-            o.frequency.value = freq;
-            gain.gain.setValueAtTime(vol, t);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-            o.start(t); o.stop(t + dur);
+        const osc = (freq, dur, wave = 'square', vol = 0.14, start = 0) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = wave; o.frequency.value = freq;
+            o.connect(g); g.connect(ctx.destination);
+            g.gain.setValueAtTime(vol, t + start);
+            g.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
+            o.start(t + start); o.stop(t + start + dur);
         };
 
-        if (type === 'catch') {
-            const o = ctx.createOscillator(); o.connect(gain);
-            o.frequency.setValueAtTime(523, t); o.frequency.exponentialRampToValueAtTime(880, t + 0.1);
-            gain.gain.setValueAtTime(0.15, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-            o.start(t); o.stop(t + 0.2);
-        } else if (type === 'miss') {
-            tone(280, 0.35, 'sawtooth');
-        } else if (type === 'powerup') {
-            [523, 784, 1047, 1318].forEach((f, i) => {
-                const o = ctx.createOscillator(); const g2 = ctx.createGain();
-                o.connect(g2); g2.connect(ctx.destination);
-                o.frequency.value = f;
-                const s = t + i * 0.08;
-                g2.gain.setValueAtTime(0, s); g2.gain.linearRampToValueAtTime(0.18, s + 0.04);
-                g2.gain.exponentialRampToValueAtTime(0.001, s + 0.15);
-                o.start(s); o.stop(s + 0.15);
-            });
-        } else if (type === 'shieldBreak') {
-            [600, 400, 200].forEach((f, i) => {
-                const o = ctx.createOscillator(); const g2 = ctx.createGain();
-                o.type = 'sawtooth'; o.connect(g2); g2.connect(ctx.destination);
-                o.frequency.value = f;
-                const s = t + i * 0.1;
-                g2.gain.setValueAtTime(0.15, s); g2.gain.exponentialRampToValueAtTime(0.001, s + 0.12);
-                o.start(s); o.stop(s + 0.12);
-            });
-        } else if (type === 'levelup') {
-            [523, 659, 784, 1047].forEach((f, i) => {
-                const o = ctx.createOscillator(); const g2 = ctx.createGain();
-                o.connect(g2); g2.connect(ctx.destination);
-                o.frequency.value = f;
-                const s = t + i * 0.1;
-                g2.gain.setValueAtTime(0, s); g2.gain.linearRampToValueAtTime(0.15, s + 0.05);
-                g2.gain.exponentialRampToValueAtTime(0.001, s + 0.18);
-                o.start(s); o.stop(s + 0.2);
-            });
-        }
+        if      (type === 'catch')      { osc(523,.08); osc(784,.12); }
+        else if (type === 'miss')       { osc(280,.35,'sawtooth'); }
+        else if (type === 'powerup')    { [523,784,1047,1318].forEach((f,i) => osc(f,.15,'square',.15,i*.08)); }
+        else if (type === 'shieldBreak'){ [600,400,200].forEach((f,i) => osc(f,.12,'sawtooth',.15,i*.1)); }
+        else if (type === 'levelup')    { [523,659,784,1047].forEach((f,i) => osc(f,.18,'square',.14,i*.1)); }
     }
 
-    // ── Update ────────────────────────────────────────────────────────────────
-    update(time, delta) {
-        if (this.gameOver) return;
+    // ═══ UPDATE ═══════════════════════════════════════════════════════════════
+    update(_, delta) {
         const dt = delta / 1000;
 
-        // Player
+        // ── Game over odpočet ────────────────────────────────────────────────
+        if (this.isOver) {
+            this.goDelay -= dt;
+            if (this.goDelay <= 0)
+                this.scene.start('GameOverScene', { score: this.score });
+            return;
+        }
+
+        // ── Hráč ────────────────────────────────────────────────────────────
         let vx = 0;
         if (this.cursors.left.isDown  || this.wasd.A.isDown) vx = -310;
         if (this.cursors.right.isDown || this.wasd.D.isDown) vx =  310;
-        if (vx === 0 && this.touchDir !== 0) vx = this.touchDir * 310;
+        if (!vx && this.touchDir) vx = this.touchDir * 310;
         this.player.x = Phaser.Math.Clamp(this.player.x + vx * dt, 30, this.W - 30);
-        if (vx !== 0) { this.player.anims.play('walk', true); this.player.setFlipX(vx < 0); }
-        else            { this.player.anims.play('idle', true); }
+        this.player.anims.play(vx ? 'walk' : 'idle', true);
+        if (vx) this.player.setFlipX(vx < 0);
 
-        // Shield ring pulse
-        if (this.shieldActive) {
-            this.shieldPulse += 4 * dt;
-            const a = 0.45 + Math.sin(this.shieldPulse) * 0.35;
-            this.shieldRing.clear();
-            this.shieldRing.lineStyle(4, 0x00BFFF, a);
-            this.shieldRing.strokeCircle(this.player.x, this.player.y - 36, 50);
-        } else {
-            this.shieldRing.clear();
+        // ── Spawn hovínek ────────────────────────────────────────────────────
+        this.poopCd -= dt;
+        if (this.poopCd <= 0) { this._spawnPoop(); this.poopCd = this.poopInt; }
+
+        // ── Spawn power-upů ──────────────────────────────────────────────────
+        this.puCd -= dt;
+        if (this.puCd <= 0) { this._spawnPowerup(); this.puCd = this.puInterval; }
+
+        // ── Star odpočet ─────────────────────────────────────────────────────
+        if (this.starSec > 0) { this.starSec -= dt; if (this.starSec < 0) this.starSec = 0; }
+
+        // ── Štít kruh ────────────────────────────────────────────────────────
+        this.shieldGfx.clear();
+        if (this.shield) {
+            this.shieldPulse += 3.5 * dt;
+            const alpha = 0.4 + Math.sin(this.shieldPulse) * 0.35;
+            this.shieldGfx.lineStyle(5, 0x00BFFF, alpha);
+            this.shieldGfx.strokeCircle(this.player.x, this.player.y - 36, 52);
         }
 
-        // Refresh HUD (star countdown)
-        this._refreshHUD();
+        // ── HUD ──────────────────────────────────────────────────────────────
+        this._hudUpdate();
 
         const catchY = this.player.y - 46;
 
-        // Poops
+        // ── Hovínka ──────────────────────────────────────────────────────────
         for (let i = this.poops.length - 1; i >= 0; i--) {
             const p = this.poops[i];
             p.y      += p.vy * dt;
             p.rotation += p.vr * dt;
-            p.wobble += 2.2 * dt;
-            p.x      += Math.sin(p.wobble) * 0.6;
-            if (Math.abs(p.x - this.player.x) < 34 && Math.abs(p.y - catchY) < 36) { this._catch(p); continue; }
+            p.wobble += 2.0 * dt;
+            p.x      += Math.sin(p.wobble) * 0.55;
+            if (Math.abs(p.x - this.player.x) < 34 && Math.abs(p.y - catchY) < 36) {
+                this._catchPoop(p); continue;
+            }
             if (p.y > this.H + 50) { p.destroy(); this.poops.splice(i, 1); this._miss(); }
         }
 
-        // Power-ups
+        // ── Power-upy ────────────────────────────────────────────────────────
         for (let i = this.powerups.length - 1; i >= 0; i--) {
             const p = this.powerups[i];
-            p.y      += p.vy * dt;
-            p.rotation += p.vr * dt;
-            if (Math.abs(p.x - this.player.x) < 36 && Math.abs(p.y - catchY) < 38) {
-                this._activatePowerup(p.type, p.x, p.y);
-                p.destroy(); this.powerups.splice(i, 1); continue;
+            p.y        += p.vy * dt;
+            p.rotation += 1.2 * dt;     // pomalá rotace místo tweenu
+            if (Math.abs(p.x - this.player.x) < 38 && Math.abs(p.y - catchY) < 40) {
+                this._catchPowerup(p); continue;
             }
             if (p.y > this.H + 60) { p.destroy(); this.powerups.splice(i, 1); }
         }
 
-        // Power-up countdown
-        this._powerupCd -= dt;
-        if (this._powerupCd <= 0) {
-            this._spawnPowerup();
-            this._powerupCd = 12;
-        }
-
-        // Parallax
+        // ── Parallax ─────────────────────────────────────────────────────────
         this.mtns.tilePositionX += 0.06;
-        this.clouds.forEach(c => { c.x -= c.spd; if (c.x < -140) c.x = this.W + 140; });
+        this.cloudsF.forEach(c => { c.x -= c.spd; if (c.x < -150) c.x = this.W + 150; });
+        this.cloudsN.forEach(c => { c.x -= c.spd; if (c.x < -150) c.x = this.W + 150; });
     }
 }
