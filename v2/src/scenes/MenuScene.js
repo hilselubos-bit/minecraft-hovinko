@@ -72,8 +72,9 @@ class MenuScene extends Phaser.Scene {
 
     // ── Buttons ───────────────────────────────────────────────────────────────
     _buildButtons(W) {
-        this._makeBtn(W / 2, 360, '▶  HRÁT',    0x4CAF50, 0x2e7d32, () => this.scene.start('GameScene'));
-        this._makeBtn(W / 2, 422, '🏆 TABULKA', 0xFFC107, 0xF57F17, () => this._showBoard(W));
+        this._makeBtn(W / 2, 352, '▶  HRAT',      0x4CAF50, 0x2e7d32, () => this.scene.start('GameScene'));
+        this._makeBtn(W / 2, 408, 'TABULKA',      0xFFC107, 0xF57F17, () => this._showBoard(W));
+        this._makeBtn(W / 2, 464, 'NASTAVENI',    0x7B1FA2, 0x4A148C, () => this._showSettings(W));
     }
 
     // ── Walking Steve ─────────────────────────────────────────────────────────
@@ -179,6 +180,88 @@ class MenuScene extends Phaser.Scene {
         }
 
         this._makeBtn(W / 2, H - 52, '◀ ZPĚT', 0x4CAF50, 0x2e7d32, () => this.scene.restart(), 51);
+    }
+
+    // ── Nastavení overlay ─────────────────────────────────────────────────────
+    _showSettings(W) {
+        const H = this.scale.height;
+        const s = JSON.parse(localStorage.getItem('mc_hovinko_settings') || '{"char":"steve","item":"poop"}');
+        const D = 100;
+        const track = [];
+        const T = (o) => { track.push(o); return o; };
+        const close = () => track.forEach(o => { try { o.destroy(); } catch(e){} });
+
+        // Podklad
+        const ov = T(this.add.graphics().setDepth(D));
+        ov.fillStyle(0x000000, 0.93); ov.fillRoundedRect(18, 10, W - 36, H - 20, 14);
+        ov.lineStyle(4, 0xCC88FF);    ov.strokeRoundedRect(18, 10, W - 36, H - 20, 14);
+
+        T(this.add.text(W / 2, 50, 'NASTAVENI', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '14px', fill: '#CC88FF'
+        }).setOrigin(0.5).setDepth(D + 1));
+
+        // ── Postavy ──────────────────────────────────────────────────────────
+        T(this.add.text(32, 94, 'POSTAVA:', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#aaa'
+        }).setOrigin(0, 0.5).setDepth(D + 1));
+
+        [{ key: 'steve', label: 'STEVE' }, { key: 'skeleton', label: 'KOSTLIVEC' }, { key: 'creeper', label: 'CREEPER' }]
+        .forEach((ch, i) => {
+            const bx = 102 + i * 138, by = 180;
+            const sel = s.char === ch.key;
+            const box = T(this.add.graphics().setDepth(D + 1));
+            box.fillStyle(sel ? 0x4A148C : 0x1a1a1a, 1);
+            box.fillRoundedRect(bx - 52, by - 62, 104, 116, 8);
+            box.lineStyle(3, sel ? 0xCC88FF : 0x444444, 1);
+            box.strokeRoundedRect(bx - 52, by - 62, 104, 116, 8);
+            box.setInteractive(new Phaser.Geom.Rectangle(bx - 52, by - 62, 104, 116), Phaser.Geom.Rectangle.Contains);
+            box.on('pointerdown', () => {
+                s.char = ch.key; localStorage.setItem('mc_hovinko_settings', JSON.stringify(s));
+                close(); this._showSettings(W);
+            });
+            T(this.add.image(bx, by - 8, ch.key, 0).setScale(1.05).setDepth(D + 2));
+            T(this.add.text(bx, by + 46, ch.label, {
+                fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
+                fill: sel ? '#CC88FF' : '#777'
+            }).setOrigin(0.5).setDepth(D + 2));
+        });
+
+        // ── Padající předměty ─────────────────────────────────────────────────
+        T(this.add.text(32, 318, 'CO PADA:', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#aaa'
+        }).setOrigin(0, 0.5).setDepth(D + 1));
+
+        [{ key: 'poop', label: 'HOVINKO' }, { key: 'toilet', label: 'ZACHOD' }, { key: 'toilet_paper', label: 'TL.PAPIR' }]
+        .forEach((it, i) => {
+            const bx = 102 + i * 138, by = 415;
+            const sel = s.item === it.key;
+            const box = T(this.add.graphics().setDepth(D + 1));
+            box.fillStyle(sel ? 0x1A237E : 0x1a1a1a, 1);
+            box.fillRoundedRect(bx - 52, by - 72, 104, 120, 8);
+            box.lineStyle(3, sel ? 0x7986CB : 0x444444, 1);
+            box.strokeRoundedRect(bx - 52, by - 72, 104, 120, 8);
+            box.setInteractive(new Phaser.Geom.Rectangle(bx - 52, by - 72, 104, 120), Phaser.Geom.Rectangle.Contains);
+            box.on('pointerdown', () => {
+                s.item = it.key; localStorage.setItem('mc_hovinko_settings', JSON.stringify(s));
+                close(); this._showSettings(W);
+            });
+            T(this.add.image(bx, by - 12, it.key).setScale(0.78).setDepth(D + 2));
+            T(this.add.text(bx, by + 44, it.label, {
+                fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
+                fill: sel ? '#7986CB' : '#777'
+            }).setOrigin(0.5).setDepth(D + 2));
+        });
+
+        // ── Zpět ─────────────────────────────────────────────────────────────
+        const btnX = W / 2, btnY = H - 38, bW = 170, bH = 40;
+        const btn = T(this.add.graphics().setDepth(D + 1));
+        btn.fillStyle(0x444444, 1); btn.fillRoundedRect(btnX - bW/2, btnY - bH/2, bW, bH, 10);
+        btn.lineStyle(3, 0x222222);  btn.strokeRoundedRect(btnX - bW/2, btnY - bH/2, bW, bH, 10);
+        btn.setInteractive(new Phaser.Geom.Rectangle(btnX - bW/2, btnY - bH/2, bW, bH), Phaser.Geom.Rectangle.Contains);
+        btn.on('pointerdown', close);
+        T(this.add.text(btnX, btnY, '< ZPET', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '11px', fill: '#fff'
+        }).setOrigin(0.5).setDepth(D + 2));
     }
 
     _makeBtn(x, y, label, fill, border, cb, depth = 0) {

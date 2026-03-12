@@ -54,6 +54,103 @@ function drawSteveFrame(g, ox, legDeg) {
     g.fillRect(cx - 10, gy - 62, 7, 2); g.fillRect(cx + 3, gy - 62, 7, 2);
 }
 
+// ─── Skeleton sprite sheet ────────────────────────────────────────────────────
+function buildSkeletonSheet() {
+    const FW = 52, FH = 76, FRAMES = 4;
+    const c = document.createElement('canvas');
+    c.width = FW * FRAMES; c.height = FH;
+    const g = c.getContext('2d');
+    [-22, 0, 22, 0].forEach((deg, i) => drawSkeletonFrame(g, i * FW, deg));
+    return c;
+}
+
+function drawSkeletonFrame(g, ox, legDeg) {
+    const A = legDeg * Math.PI / 180;
+    const aA = -A * 0.8;
+    const cx = ox + 26, gy = 74;
+    function rot(px, py, w, h, angle, color, startY = 0) {
+        g.save(); g.translate(px, py); g.rotate(angle);
+        g.fillStyle = color; g.fillRect(-w / 2, startY, w, h);
+        g.restore();
+    }
+    // Legs — tenké bílošedé kosti, tmavé klouby/chodidla
+    rot(cx - 6, gy - 22, 6, 22,  A, '#D8D8D8');
+    rot(cx - 6, gy - 22, 8,  5,  A, '#555', 22);
+    rot(cx + 6, gy - 22, 6, 22, -A, '#D8D8D8');
+    rot(cx + 6, gy - 22, 8,  5, -A, '#555', 22);
+    // Pánev
+    g.fillStyle = '#B8B8B8'; g.fillRect(cx - 10, gy - 25, 20, 4);
+    // Tělo / hrudní koš
+    g.fillStyle = '#C8C8C8'; g.fillRect(cx - 10, gy - 44, 20, 20);
+    g.fillStyle = '#888';
+    [0, 6, 12].forEach(r => {
+        g.fillRect(cx - 9, gy - 42 + r, 7, 2);
+        g.fillRect(cx + 2, gy - 42 + r, 7, 2);
+    });
+    g.fillRect(cx - 1, gy - 43, 2, 19); // páteř
+    // Paže
+    rot(cx - 16, gy - 44, 5, 16,  aA, '#D0D0D0');
+    rot(cx - 16, gy - 44, 7,  4,  aA, '#555', 16);
+    rot(cx + 16, gy - 44, 5, 16, -aA, '#D0D0D0');
+    rot(cx + 16, gy - 44, 7,  4, -aA, '#555', 16);
+    // Hlava — lebka
+    g.fillStyle = '#E0E0E0'; g.fillRect(cx - 10, gy - 68, 20, 22);
+    g.fillStyle = '#000';
+    g.fillRect(cx - 9, gy - 65, 7, 7);  // levé oko (dutina)
+    g.fillRect(cx + 2, gy - 65, 7, 7);  // pravé oko
+    g.fillStyle = '#444'; g.fillRect(cx - 2, gy - 56, 4, 4); // nosní dutina
+    g.fillStyle = '#fff';
+    [cx - 7, cx - 4, cx - 1, cx + 2].forEach(tx => g.fillRect(tx, gy - 50, 2, 4)); // zuby
+    g.fillStyle = '#BCBCBC'; g.fillRect(cx - 7, gy - 50, 14, 4); // čelist
+}
+
+// ─── Creeper sprite sheet ─────────────────────────────────────────────────────
+function buildCreeperSheet() {
+    const FW = 52, FH = 76, FRAMES = 4;
+    const c = document.createElement('canvas');
+    c.width = FW * FRAMES; c.height = FH;
+    const g = c.getContext('2d');
+    [-18, 0, 18, 0].forEach((deg, i) => drawCreeperFrame(g, i * FW, deg));
+    return c;
+}
+
+function drawCreeperFrame(g, ox, legDeg) {
+    const A = legDeg * Math.PI / 180;
+    const cx = ox + 26, gy = 74;
+    function rot(px, py, w, h, angle, color, startY = 0) {
+        g.save(); g.translate(px, py); g.rotate(angle);
+        g.fillStyle = color; g.fillRect(-w / 2, startY, w, h);
+        g.restore();
+    }
+    // Nohy
+    rot(cx - 6, gy - 22, 10, 22,  A, '#2E7D32');
+    rot(cx - 6, gy - 22, 11,  5,  A, '#1B5E20', 22);
+    rot(cx + 6, gy - 22, 10, 22, -A, '#2E7D32');
+    rot(cx + 6, gy - 22, 11,  5, -A, '#1B5E20', 22);
+    // Tělo
+    g.fillStyle = '#388E3C'; g.fillRect(cx - 12, gy - 44, 24, 22);
+    g.fillStyle = '#2E7D32'; g.fillRect(cx - 12, gy - 44, 24,  3);
+    g.fillStyle = '#43A047'; g.fillRect(cx - 10, gy - 42,  8, 16);
+    // Boční nožičky
+    g.fillStyle = '#2E7D32';
+    g.fillRect(cx - 16, gy - 40, 4, 14);
+    g.fillRect(cx + 12, gy - 40, 4, 14);
+    // Hlava
+    g.fillStyle = '#4CAF50'; g.fillRect(cx - 12, gy - 70, 24, 24);
+    g.fillStyle = '#388E3C'; g.fillRect(cx - 12, gy - 70, 24,  3);
+    g.fillStyle = '#66BB6A'; g.fillRect(cx - 10, gy - 68,  9, 10);
+    // Oči
+    g.fillStyle = '#111';
+    g.fillRect(cx - 9, gy - 65, 6, 7);
+    g.fillRect(cx + 3, gy - 65, 6, 7);
+    // Creeper ústa (ikonický vzor)
+    g.fillRect(cx - 5, gy - 56, 3, 3);
+    g.fillRect(cx + 2, gy - 56, 3, 3);
+    g.fillRect(cx - 5, gy - 53, 10, 3);
+    g.fillRect(cx - 5, gy - 50, 4, 3);
+    g.fillRect(cx + 1, gy - 50, 4, 3);
+}
+
 // ─── BootScene ───────────────────────────────────────────────────────────────
 class BootScene extends Phaser.Scene {
     constructor() { super('BootScene'); }
@@ -61,6 +158,10 @@ class BootScene extends Phaser.Scene {
     create() {
         this._makePoop();
         this._makeSteve();
+        this._makeSkeleton();
+        this._makeCreeper();
+        this._makeToilet();
+        this._makeToiletPaper();
         this._makeGround();
         this._makeCloud();
         this._makeSun();
@@ -86,8 +187,78 @@ class BootScene extends Phaser.Scene {
     _makeSteve() {
         const sheet = buildSteveSheet();
         this.textures.addSpriteSheet('steve', sheet, { frameWidth: 52, frameHeight: 76 });
-        this.anims.create({ key: 'idle', frames: [{ key: 'steve', frame: 0 }], frameRate: 1 });
-        this.anims.create({ key: 'walk', frames: this.anims.generateFrameNumbers('steve', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+        this.anims.create({ key: 'idle',       frames: [{ key: 'steve', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'walk',       frames: this.anims.generateFrameNumbers('steve', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+        this.anims.create({ key: 'steve_idle', frames: [{ key: 'steve', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'steve_walk', frames: this.anims.generateFrameNumbers('steve', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+    }
+
+    _makeSkeleton() {
+        const sheet = buildSkeletonSheet();
+        this.textures.addSpriteSheet('skeleton', sheet, { frameWidth: 52, frameHeight: 76 });
+        this.anims.create({ key: 'skeleton_idle', frames: [{ key: 'skeleton', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'skeleton_walk', frames: this.anims.generateFrameNumbers('skeleton', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+    }
+
+    _makeCreeper() {
+        const sheet = buildCreeperSheet();
+        this.textures.addSpriteSheet('creeper', sheet, { frameWidth: 52, frameHeight: 76 });
+        this.anims.create({ key: 'creeper_idle', frames: [{ key: 'creeper', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'creeper_walk', frames: this.anims.generateFrameNumbers('creeper', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+    }
+
+    _makeToilet() {
+        const c = document.createElement('canvas');
+        c.width = 56; c.height = 64;
+        const g = c.getContext('2d');
+        // Cisterna
+        g.fillStyle = '#F0F0F0'; g.fillRect(10, 2, 36, 22);
+        g.fillStyle = '#DCDCDC'; g.fillRect(10, 2, 36, 3);
+        g.fillStyle = '#E8E8E8'; g.fillRect(12, 6, 7, 14);  // highlight
+        g.fillStyle = '#ccc';    g.fillRect(30, 8, 11, 8);   // tlačítko plocha
+        g.fillStyle = '#aaa';    g.fillRect(33, 10, 5, 4);   // tlačítko
+        g.fillStyle = '#BDBDBD'; g.fillRect(10, 23, 36, 2);  // spodní hrana cisterny
+        // Spojovací kus
+        g.fillStyle = '#E0E0E0'; g.fillRect(18, 25, 20, 4);
+        // Mísa
+        g.fillStyle = '#FAFAFA'; g.fillRect(5, 29, 46, 28);
+        g.fillStyle = '#E8E8E8'; g.fillRect(5, 55, 46, 4);   // základna
+        // Okraj
+        g.fillStyle = '#E0E0E0'; g.fillRect(3, 29, 50, 5);
+        // Voda uvnitř
+        g.fillStyle = '#B3E5FC'; g.fillRect(11, 36, 34, 18);
+        g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(15, 38, 14, 4);
+        // Obrys
+        g.strokeStyle = '#BDBDBD'; g.lineWidth = 1.5;
+        g.strokeRect(5, 29, 46, 30); g.strokeRect(10, 2, 36, 22);
+        this.textures.addCanvas('toilet', c);
+    }
+
+    _makeToiletPaper() {
+        const c = document.createElement('canvas');
+        c.width = 52; c.height = 62;
+        const g = c.getContext('2d');
+        // Válec — tělo role
+        g.fillStyle = '#F5F5F5'; g.fillRect(6, 10, 40, 42);
+        // Levý stín, pravý stín (3D efekt)
+        g.fillStyle = '#E0E0E0'; g.fillRect(6, 10, 7, 42);
+        g.fillStyle = '#E8E8E8'; g.fillRect(39, 10, 7, 42);
+        g.fillStyle = '#fff';    g.fillRect(15, 10, 9, 42);  // highlight
+        // Vodorovné linky (vrstvy papíru)
+        g.fillStyle = '#E0E0E0';
+        for (let i = 0; i < 6; i++) g.fillRect(6, 10 + i * 8, 40, 1);
+        // Horní elipsa
+        g.fillStyle = '#EFEFEF'; g.fillRect(6, 5, 40, 10);
+        g.fillStyle = '#D8D8D8'; g.fillRect(6, 5, 40, 2);
+        // Kartonová dutina (viditelná shora)
+        g.fillStyle = '#A0724A'; g.fillRect(15, 6, 22, 8);
+        g.fillStyle = '#C8956A'; g.fillRect(15, 6, 8, 8);
+        // Spodní elipsa
+        g.fillStyle = '#E4E4E4'; g.fillRect(6, 48, 40, 8);
+        // Chlup papíru dolů
+        g.fillStyle = '#F5F5F5'; g.fillRect(28, 52, 14, 12);
+        g.fillStyle = '#E0E0E0'; g.fillRect(28, 52, 14, 1); g.fillRect(38, 52, 4, 12);
+        this.textures.addCanvas('toilet_paper', c);
     }
 
     _makeGround() {

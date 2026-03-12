@@ -33,6 +33,11 @@ class GameScene extends Phaser.Scene {
         // Nasbírané zadky
         this.buttCount = 0;
 
+        // Nastavení postavy a padajícího předmětu
+        const cfg = JSON.parse(localStorage.getItem('mc_hovinko_settings') || '{}');
+        this.charKey = cfg.char || 'steve';
+        this.itemKey = cfg.item || 'poop';
+
         // Objekty
         this.poops    = [];
         this.powerups = [];
@@ -82,9 +87,9 @@ class GameScene extends Phaser.Scene {
 
     // ═══ HRÁČ ═════════════════════════════════════════════════════════════════
     _buildPlayer() {
-        this.player = this.add.sprite(this.W / 2, this.H - 103, 'steve')
+        this.player = this.add.sprite(this.W / 2, this.H - 103, this.charKey)
             .setScale(1.3).setDepth(6);
-        this.player.anims.play('idle');
+        this.player.anims.play(`${this.charKey}_idle`);
     }
 
     // ═══ EFEKTY ═══════════════════════════════════════════════════════════════
@@ -200,7 +205,7 @@ class GameScene extends Phaser.Scene {
 
     // ═══ SPAWN ════════════════════════════════════════════════════════════════
     _spawnPoop() {
-        const img = this.add.image(Phaser.Math.Between(40, this.W - 40), -42, 'poop')
+        const img = this.add.image(Phaser.Math.Between(40, this.W - 40), -42, this.itemKey)
             .setScale(0).setDepth(7);
         img.vy     = this.dropSpeed + Phaser.Math.Between(0, 55);
         img.vr     = Phaser.Math.FloatBetween(-1.8, 1.8);
@@ -427,7 +432,7 @@ class GameScene extends Phaser.Scene {
         if (this.cursors.right.isDown || this.wasd.D.isDown) vx =  spd;
         if (!vx && this.touchDir) vx = this.touchDir * spd;
         this.player.x = Phaser.Math.Clamp(this.player.x + vx * dt, 30, this.W - 30);
-        this.player.anims.play(vx ? 'walk' : 'idle', true);
+        this.player.anims.play(vx ? `${this.charKey}_walk` : `${this.charKey}_idle`, true);
         if (vx) this.player.setFlipX(vx < 0);
 
         // ── Spawn hovínek ────────────────────────────────────────────────────
