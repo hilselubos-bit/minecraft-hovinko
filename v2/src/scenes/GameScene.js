@@ -157,7 +157,8 @@ class GameScene extends Phaser.Scene {
     }
 
     _spawnPowerup() {
-        const type = Math.random() < 0.5 ? 'shield' : 'star';
+        const roll = Math.random();
+        const type = roll < 0.34 ? 'shield' : roll < 0.67 ? 'star' : 'butt';
         const x    = Phaser.Math.Between(55, this.W - 55);
         const img  = this.add.image(x, -55, `powerup_${type}`).setScale(0).setDepth(7);
         img.vy     = 62 + Math.random() * 22;
@@ -168,8 +169,8 @@ class GameScene extends Phaser.Scene {
         this.tweens.add({ targets: img, scale: 1.15, duration: 400, ease: 'Back.Out' });
 
         // Blikající upozornění nahoře
-        const label = type === 'shield' ? 'STIT PADA!' : '2x BODY PADA!';
-        const color = type === 'shield' ? '#00BFFF' : '#FFD700';
+        const label = type === 'shield' ? 'STIT PADA!' : type === 'star' ? '2x BODY PADA!' : 'ZADEK PADA!';
+        const color = type === 'shield' ? '#00BFFF' : type === 'star' ? '#FFD700' : '#FFAA88';
         const ann = this.add.text(x, 105, label, {
             fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
             fill: color, stroke: '#000', strokeThickness: 3
@@ -219,11 +220,47 @@ class GameScene extends Phaser.Scene {
         if (type === 'shield') {
             this.shield = true;
             this._showMsg('STIT!', '#00BFFF', x, y);
-        } else {
+        } else if (type === 'star') {
             this.starSec = 8;
             this._showMsg('2x BODY!', '#FFD700', x, y);
+        } else {
+            this._fartEffect();
         }
         this._hudUpdate();
+    }
+
+    _fartEffect() {
+        const px = this.player.x, py = this.player.y - 20;
+        const wasFlipped = this.player.flipX;
+
+        // Steve se otočí zády
+        this.player.setFlipX(!wasFlipped);
+        this._sound('fart');
+        this._showMsg('PRRRR!', '#90EE90', px, py - 30);
+
+        // Fartový výtr — 3 kruhy letí do strany
+        const dir = wasFlipped ? 1 : -1;
+        [0, 180, 360].forEach(delay => {
+            const g = this.add.graphics().setDepth(15);
+            this.tweens.add({
+                targets: { r: 10, ax: 0, alpha: 0.7 },
+                r: 50, ax: 80, alpha: 0,
+                delay, duration: 700,
+                onUpdate: (tw, obj) => {
+                    g.clear();
+                    g.fillStyle(0x90EE90, obj.alpha);
+                    g.fillCircle(px + dir * (30 + obj.ax), py + 20, obj.r);
+                },
+                onComplete: () => g.destroy()
+            });
+        });
+
+        // Všechna hovínka odlítí nahoru
+        this.poops.forEach(p => { p.vy = -420; p.vr *= -1; });
+
+        // Po 650ms se Steve otočí zpět
+        this.tweens.add({ targets: this.player, alpha: 1, delay: 650, duration: 1,
+            onComplete: () => this.player.setFlipX(wasFlipped) });
     }
 
     _miss() {
@@ -298,6 +335,23 @@ class GameScene extends Phaser.Scene {
         else if (type === 'powerup')    { [523,784,1047,1318].forEach((f,i) => osc(f,.15,'square',.15,i*.08)); }
         else if (type === 'shieldBreak'){ [600,400,200].forEach((f,i) => osc(f,.12,'sawtooth',.15,i*.1)); }
         else if (type === 'levelup')    { [523,659,784,1047].forEach((f,i) => osc(f,.18,'square',.14,i*.1)); }
+        else if (type === 'fart') {
+            // Šum (prd)
+            const bufSize = Math.floor(ctx.sampleRate * 0.55);
+            const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let j = 0; j < bufSize; j++) data[j] = (Math.random() * 2 - 1);
+            const noise = ctx.createBufferSource();
+            noise.buffer = buf;
+            const ng = ctx.createGain();
+            ng.gain.setValueAtTime(0.35, t);
+            ng.gain.setValueAtTime(0.25, t + 0.15);
+            ng.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+            noise.connect(ng); ng.connect(ctx.destination);
+            noise.start(t);
+            // Nízký bas pod šumem
+            osc(70, 0.5, 'sawtooth', 0.2);
+        }
     }
 
     // ═══ UPDATE ═══════════════════════════════════════════════════════════════

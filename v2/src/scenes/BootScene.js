@@ -68,6 +68,7 @@ class BootScene extends Phaser.Scene {
         this._makeTree();
         this._makeMountains();
         this._makePowerups();
+        this._makeButt();
         this._makeHeart();
         this.scene.start('MenuScene');
     }
@@ -215,6 +216,25 @@ class BootScene extends Phaser.Scene {
         gt.lineWidth = 2;
         gt.stroke();
         this.textures.addCanvas('powerup_star', ct);
+    }
+
+    _makeButt() {
+        const c = document.createElement('canvas');
+        c.width = c.height = 52;
+        const g = c.getContext('2d');
+        // Levá hýžď
+        g.fillStyle = '#FFAA88';
+        g.beginPath(); g.arc(17, 32, 15, 0, Math.PI * 2); g.fill();
+        // Pravá hýžď
+        g.beginPath(); g.arc(35, 32, 15, 0, Math.PI * 2); g.fill();
+        // Obrys
+        g.strokeStyle = '#CC7755'; g.lineWidth = 2;
+        g.beginPath(); g.arc(17, 32, 15, 0, Math.PI * 2); g.stroke();
+        g.beginPath(); g.arc(35, 32, 15, 0, Math.PI * 2); g.stroke();
+        // Rýha
+        g.beginPath(); g.moveTo(26, 17); g.quadraticCurveTo(23, 32, 26, 47);
+        g.lineWidth = 2.5; g.stroke();
+        this.textures.addCanvas('powerup_butt', c);
     }
 
     _makeHeart() {
