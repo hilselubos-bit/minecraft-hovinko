@@ -9,8 +9,9 @@ class GameScene extends Phaser.Scene {
         this.score     = 0;
         this.lives     = 3;
         this.level     = 1;
-        this.isOver    = false;
-        this.goDelay   = 0;
+        this.isOver        = false;
+        this.goDelay       = 0;
+        this.enteringPortal = false;
 
         // Poop spawner (čistě v update loopu)
         this.poopInt   = 1.2;   // interval spawn [s]
@@ -356,8 +357,8 @@ class GameScene extends Phaser.Scene {
     }
 
     _enterPortal() {
-        if (this.isOver) return;
-        this.isOver = true; // zastav herní logiku během přechodu
+        if (this.isOver || this.enteringPortal) return;
+        this.enteringPortal = true;
 
         this._showMsg('PORTAL!', '#00CFFF', this.W / 2, this.H / 2 - 60);
         this.cameras.main.flash(600, 0, 180, 255, false);
@@ -465,6 +466,7 @@ class GameScene extends Phaser.Scene {
         const dt = delta / 1000;
 
         // ── Game over odpočet ────────────────────────────────────────────────
+        if (this.enteringPortal) return; // čeká na přechod do portálu
         if (this.isOver) {
             this.goDelay -= dt;
             if (this.goDelay <= 0)
