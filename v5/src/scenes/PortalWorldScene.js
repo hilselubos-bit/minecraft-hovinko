@@ -66,17 +66,17 @@ class PortalWorldScene extends Phaser.Scene {
         // y kept in top 28% so they never overlap the tunnel gameplay area
         // Solar system in strict order — all same speed so ordering is preserved
         // Mercury starts just off-screen right so it appears within first seconds
-        const SPD = 22;
+        const SPD = 42;
         const defs = [
-            { key: 'planet_mercury', label: 'Mercury', scale: 0.52, spd: SPD, y: 0.10, x0: 1.05 },
-            { key: 'planet_venus',   label: 'Venus',   scale: 0.62, spd: SPD, y: 0.24, x0: 1.65 },
-            { key: 'planet_earth',   label: 'Earth',   scale: 0.66, spd: SPD, y: 0.11, x0: 2.25 },
-            { key: 'planet_mars',    label: 'Mars',    scale: 0.56, spd: SPD, y: 0.26, x0: 2.85 },
-            { key: 'planet_jupiter', label: 'Jupiter', scale: 0.88, spd: SPD, y: 0.13, x0: 3.55 },
-            { key: 'planet_saturn',  label: 'Saturn',  scale: 0.78, spd: SPD, y: 0.25, x0: 4.35 },
-            { key: 'planet_uranus',  label: 'Uranus',  scale: 0.66, spd: SPD, y: 0.12, x0: 5.05 },
-            { key: 'planet_neptune', label: 'Neptune', scale: 0.62, spd: SPD, y: 0.27, x0: 5.65 },
-            { key: 'planet_pluto',   label: 'Pluto',   scale: 0.50, spd: SPD, y: 0.10, x0: 6.25 },
+            { key: 'planet_mercury', label: 'Mercury', scale: 1.04, spd: SPD, y: 0.10, x0: 1.05 },
+            { key: 'planet_venus',   label: 'Venus',   scale: 1.24, spd: SPD, y: 0.24, x0: 1.65 },
+            { key: 'planet_earth',   label: 'Earth',   scale: 1.32, spd: SPD, y: 0.11, x0: 2.25 },
+            { key: 'planet_mars',    label: 'Mars',    scale: 1.12, spd: SPD, y: 0.26, x0: 2.85 },
+            { key: 'planet_jupiter', label: 'Jupiter', scale: 1.76, spd: SPD, y: 0.13, x0: 3.55 },
+            { key: 'planet_saturn',  label: 'Saturn',  scale: 1.56, spd: SPD, y: 0.25, x0: 4.35 },
+            { key: 'planet_uranus',  label: 'Uranus',  scale: 1.32, spd: SPD, y: 0.12, x0: 5.05 },
+            { key: 'planet_neptune', label: 'Neptune', scale: 1.24, spd: SPD, y: 0.27, x0: 5.65 },
+            { key: 'planet_pluto',   label: 'Pluto',   scale: 1.00, spd: SPD, y: 0.10, x0: 6.25 },
         ];
         const sty = {
             fontFamily: '"Press Start 2P", monospace',
