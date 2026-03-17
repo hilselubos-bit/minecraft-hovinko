@@ -746,49 +746,14 @@ class BootScene extends Phaser.Scene {
         const c = document.createElement('canvas');
         c.width = c.height = 32;
         const g = c.getContext('2d');
-
-        // === Dark polished stone tile (y=8–32) ===
-        g.fillStyle = '#16162a';
-        g.fillRect(0, 8, 32, 24);
-
-        // Inner tile — slightly lighter = polished sheen
-        g.fillStyle = '#1c1c36';
-        g.fillRect(1, 9, 29, 11);
-
-        // Specular highlight (top-left corner of each tile)
-        g.fillStyle = 'rgba(255,255,255,0.07)';
-        g.fillRect(2, 10, 8, 3);
-
-        // Shadow just below grass line (depth)
-        g.fillStyle = 'rgba(0,0,0,0.40)';
-        g.fillRect(0, 8, 32, 3);
-
-        // Grout lines
-        g.fillStyle = '#09091a';
-        g.fillRect(0, 31, 32, 1);   // bottom
-        g.fillRect(31, 8, 1, 24);   // right
-
-        // === Glowing grass strip (y=0–8) ===
-        // Soft glow bleeding into stone
-        g.fillStyle = 'rgba(50,255,30,0.18)';
-        g.fillRect(0, 7, 32, 4);
-        g.fillStyle = 'rgba(50,255,30,0.07)';
-        g.fillRect(0, 10, 32, 4);
-
-        // Grass layers (dark→bright bottom→top)
-        g.fillStyle = '#0c3d05'; g.fillRect(0, 5, 32, 3);
-        g.fillStyle = '#1a7009'; g.fillRect(0, 3, 32, 3);
-        g.fillStyle = '#28b010'; g.fillRect(0, 1, 32, 3);
-
-        // Neon top edge
-        g.fillStyle = '#44ee20'; g.fillRect(0, 0, 32, 1);
-
-        // Grass blades — bright neon tips
-        g.fillStyle = '#66ff33';
-        [1, 5, 9, 13, 17, 21, 25, 29].forEach(x => g.fillRect(x, 0, 2, 4));
-        g.fillStyle = '#33cc0f';
-        [3, 7, 11, 15, 19, 23, 27, 31].forEach(x => g.fillRect(x, 1, 1, 3));
-
+        // Grass top — gradient blades, no block grid
+        g.fillStyle = '#5aaa30'; g.fillRect(0, 0, 32, 10);
+        g.fillStyle = '#6abf38'; [1,5,9,13,17,21,25,29].forEach(x => g.fillRect(x, 0, 2, 5));
+        g.fillStyle = '#3d8020'; [3,11,19,27].forEach(x => g.fillRect(x, 2, 2, 6));
+        // Dirt — smooth, no tiles
+        g.fillStyle = '#9c6b3c'; g.fillRect(0, 10, 32, 22);
+        g.fillStyle = '#b07a48'; g.fillRect(0, 10, 32, 3);
+        g.fillStyle = '#7a5030'; [2,14,24].forEach(x => g.fillRect(x, 15, 6, 3));
         this.textures.addCanvas('ground', c);
     }
 
