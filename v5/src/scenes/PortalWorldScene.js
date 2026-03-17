@@ -61,8 +61,10 @@ class PortalWorldScene extends Phaser.Scene {
 
     // ── Background ────────────────────────────────────────────────────────────
     _buildBg() {
-        this.add.image(this.W / 2, this.H / 2, 'stars_far').setDepth(0);
-        this.add.image(this.W / 2, this.H / 2, 'stars_near').setAlpha(0.5).setDepth(0);
+        this._starsFar  = this.add.tileSprite(0, 0, this.W, this.H, 'stars_far')
+            .setOrigin(0).setDepth(0);
+        this._starsNear = this.add.tileSprite(0, 0, this.W, this.H, 'stars_near')
+            .setAlpha(0.5).setOrigin(0).setDepth(0);
     }
 
     // ── Planets drifting through space ────────────────────────────────────────
@@ -282,6 +284,12 @@ class PortalWorldScene extends Phaser.Scene {
                 if (this.magnetSec <= 0) { this._magnetTxt.destroy(); this._magnetTxt = null; }
             }
         }
+
+        // ── Star parallax ─────────────────────────────────────────────────────
+        this._starsFar.tilePositionX  += 8  * dt;
+        this._starsFar.tilePositionY  += 4  * dt;
+        this._starsNear.tilePositionX += 18 * dt;
+        this._starsNear.tilePositionY += 9  * dt;
 
         // ── Planets ───────────────────────────────────────────────────────────
         const PLANET_GAP = 280;
