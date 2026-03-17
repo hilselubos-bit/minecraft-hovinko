@@ -223,7 +223,9 @@ class PortalWorldScene extends Phaser.Scene {
 
         // Vanishing point sways left/right
         this.vpTime += dt;
-        const vpX = this.W / 2 + Math.sin(this.vpTime * 0.55) * this.W * 0.18;
+        const vpX = this.W / 2
+            + Math.sin(this.vpTime * 0.55) * this.W * 0.38
+            + Math.sin(this.vpTime * 0.22) * this.W * 0.08;
         const vpY = this.H * 0.10;
 
         // ── Player movement ───────────────────────────────────────────────────
