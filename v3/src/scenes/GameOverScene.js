@@ -5,31 +5,36 @@ class GameOverScene extends Phaser.Scene {
         this.finalScore = data.score || 0;
         this.submitted  = false;
         this.inputDiv   = null;
-
-        // Personal best tracking
-        const prevBest = parseInt(localStorage.getItem('mc_best_score') || '0', 10);
-        if (this.finalScore > prevBest) {
-            localStorage.setItem('mc_best_score', String(this.finalScore));
-        }
-
-        // Soap unlock at 250
-        const unlocks = JSON.parse(localStorage.getItem('mc_unlocks') || '{}');
-        this.newUnlock = false;
-        if (this.finalScore >= 250 && !unlocks.soap) {
-            unlocks.soap = true;
-            localStorage.setItem('mc_unlocks', JSON.stringify(unlocks));
-            this.newUnlock = true;
-        }
     }
 
     create() {
         const W = this.scale.width, H = this.scale.height;
 
-        // Background only — panel je v HTML modálu
+        // Background
         const sky = this.add.graphics();
         sky.fillGradientStyle(0x5BB8FF, 0x5BB8FF, 0xB8E4FF, 0xB8E4FF, 1);
         sky.fillRect(0, 0, W, H);
         this.add.tileSprite(0, H - 100, W, 100, 'ground').setOrigin(0, 0);
+        this.add.graphics().fillStyle(0x000000, 0.72).fillRect(0, 0, W, H);
+
+        // Panel
+        const panel = this.add.graphics();
+        panel.fillStyle(0x111111, 0.9);
+        panel.fillRoundedRect(30, 100, W - 60, H - 200, 16);
+        panel.lineStyle(4, 0xFFD700, 1);
+        panel.strokeRoundedRect(30, 100, W - 60, H - 200, 16);
+
+        this.add.text(W / 2, 148, 'HRA SKONČILA!', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '18px',
+            fill: '#FF5722', stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5);
+
+        this.add.text(W / 2, 200, '😢', { fontSize: '44px' }).setOrigin(0.5);
+
+        this.add.text(W / 2, 260, `Skóre: ${this.finalScore} 💩`, {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '13px',
+            fill: '#FFD700', stroke: '#000', strokeThickness: 2
+        }).setOrigin(0.5);
 
         // Uvolni Phaser keyboard capture aby HTML input dostal všechny klávesy
         this.input.keyboard.disableGlobalCapture();
@@ -44,146 +49,61 @@ class GameOverScene extends Phaser.Scene {
         div.id = 'nameOverlay';
         div.style.cssText = `
             position: fixed;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.72);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10,10,10,0.96);
+            border: 3px solid #5a9e32;
+            border-radius: 14px;
+            padding: 24px 20px 20px;
+            text-align: center;
             z-index: 9999;
+            width: min(340px, 88vw);
+            box-sizing: border-box;
         `;
 
         div.innerHTML = `
-            <div style="
-                background: linear-gradient(160deg,#1a1a2e 0%,#111118 100%);
-                border: 3px solid #FFD700;
-                border-radius: 18px;
-                padding: 28px 22px 22px;
-                text-align: center;
-                width: min(340px, 88vw);
-                box-sizing: border-box;
-                box-shadow: 0 0 40px rgba(255,215,0,0.18), 0 8px 32px rgba(0,0,0,0.7);
-                position: relative;
-            ">
-                <div style="font-size:38px;margin-bottom:6px;line-height:1">💩</div>
-                <div style="
+            <p style="font-family:'Press Start 2P',monospace;font-size:10px;color:#ccc;margin-bottom:14px;line-height:1.6">
+                Zadej své jméno:
+            </p>
+            <input id="nameInput" type="text" maxlength="12" autocomplete="off" autocorrect="off"
+                spellcheck="false" placeholder="Tvoje jméno..."
+                style="
+                    width:100%; padding:12px 10px; font-size:16px;
                     font-family:'Press Start 2P',monospace;
-                    font-size:13px;color:#FF5722;
-                    margin-bottom:4px;
-                    text-shadow:0 0 12px rgba(255,87,34,0.5);
-                ">GAME OVER</div>
-                <div style="
-                    font-family:'Press Start 2P',monospace;
-                    font-size:9px;color:#FFD700;
-                    margin-bottom:${this.newUnlock ? '10px' : '20px'};
-                    opacity:0.85;
-                ">Score: ${this.finalScore}</div>
-
-                ${this.newUnlock ? `
-                <div style="
-                    font-family:'Press Start 2P',monospace;
-                    font-size:8px; color:#00E676;
-                    background:rgba(0,230,118,0.1);
-                    border:2px solid #00E676;
-                    border-radius:8px; padding:8px 10px;
-                    margin-bottom:16px; line-height:1.8;
-                    text-shadow:0 0 8px rgba(0,230,118,0.5);
-                    animation:unlockGlow 1s ease-in-out infinite alternate;
-                ">🔓 SOAP UNLOCKED!<br><span style="font-size:7px;color:#aaa">New character in settings!</span></div>
-                <style>@keyframes unlockGlow{from{box-shadow:0 0 6px rgba(0,230,118,0.3)}to{box-shadow:0 0 18px rgba(0,230,118,0.7)}}</style>
-                ` : ''}
-
-                <div style="
-                    width:100%;height:1px;
-                    background:linear-gradient(90deg,transparent,#FFD700,transparent);
-                    margin-bottom:18px;
-                "></div>
-
-                <p style="
-                    font-family:'Press Start 2P',monospace;
-                    font-size:8px;color:#aaa;
-                    margin-bottom:12px;line-height:1.8;
-                ">Enter your name for<br>the leaderboard:</p>
-
-                <input id="nameInput" type="text" maxlength="12"
-                    autocomplete="off" autocorrect="off" autocapitalize="characters"
-                    spellcheck="false" placeholder="YOUR NAME..."
-                    style="
-                        width:100%; padding:13px 10px; font-size:14px;
-                        font-family:'Press Start 2P',monospace;
-                        background:#0d0d1a; color:#FFD700;
-                        border:2px solid #FFD700; border-radius:10px;
-                        box-sizing:border-box; text-align:center; outline:none;
-                        letter-spacing:2px;
-                        box-shadow:0 0 10px rgba(255,215,0,0.15) inset;
-                    ">
-
-                <button id="nameSubmit" style="
-                    margin-top:14px; width:100%; padding:14px 0;
-                    font-family:'Press Start 2P',monospace; font-size:11px;
-                    background:linear-gradient(180deg,#4CAF50,#2e7d32);
-                    color:#fff; border:2px solid #FFD700;
-                    border-radius:10px; cursor:pointer; letter-spacing:1px;
-                    box-shadow:0 4px 0 #1b5e20, 0 0 16px rgba(76,175,80,0.3);
-                    position:relative; top:0; transition:top .08s,box-shadow .08s;
-                ">✔ CONFIRM</button>
-
-                <button id="nameSkip" style="
-                    margin-top:10px; width:100%; padding:12px 0;
+                    background:#fff; color:#000;
+                    border:3px solid #5a9e32; border-radius:8px;
+                    box-sizing:border-box; text-align:center; outline:none;
+                ">
+            <button id="nameSubmit"
+                style="
+                    margin-top:14px; width:100%; padding:13px 0;
+                    font-family:'Press Start 2P',monospace; font-size:12px;
+                    background:#4CAF50; color:#fff; border:3px solid #2e7d32;
+                    border-radius:8px; cursor:pointer; letter-spacing:1px;
+                ">
+                POTVRDIT
+            </button>
+            <button id="nameSkip"
+                style="
+                    margin-top:8px; width:100%; padding:9px 0;
                     font-family:'Press Start 2P',monospace; font-size:10px;
-                    background:transparent; color:#888;
-                    border:2px solid #555; border-radius:10px; cursor:pointer;
-                    transition:color .15s,border-color .15s;
-                ">SKIP / MENU</button>
-            </div>
+                    background:transparent; color:#888; border:2px solid #444;
+                    border-radius:8px; cursor:pointer;
+                ">
+                PRESKOCIT / MENU
+            </button>
         `;
 
         document.body.appendChild(div);
         this.inputDiv = div;
 
-        // Button press effect
-        const btn = document.getElementById('nameSubmit');
-        btn.addEventListener('mousedown',  () => { btn.style.top = '3px'; btn.style.boxShadow = '0 1px 0 #1b5e20'; });
-        btn.addEventListener('mouseup',    () => { btn.style.top = '0';   btn.style.boxShadow = '0 4px 0 #1b5e20, 0 0 16px rgba(76,175,80,0.3)'; });
-        btn.addEventListener('touchstart', () => { btn.style.top = '3px'; btn.style.boxShadow = '0 1px 0 #1b5e20'; }, { passive: true });
-        btn.addEventListener('touchend',   () => { btn.style.top = '0';   btn.style.boxShadow = '0 4px 0 #1b5e20, 0 0 16px rgba(76,175,80,0.3)'; });
-
-        const skipBtn = document.getElementById('nameSkip');
-        skipBtn.addEventListener('mouseenter', () => { skipBtn.style.color = '#ccc'; skipBtn.style.borderColor = '#888'; });
-        skipBtn.addEventListener('mouseleave', () => { skipBtn.style.color = '#888'; skipBtn.style.borderColor = '#555'; });
-
         // Auto-focus after short delay (prevents iOS immediate keyboard quirks)
         setTimeout(() => document.getElementById('nameInput')?.focus(), 150);
 
-        const BAD_WORDS = [
-            'fuck','shit','cunt','bitch','asshole','nigger','faggot','retard',
-            'nazi','hitler','penis','vagina','cock','dick','pussy','whore','slut',
-            'kurva','pica','huj','kokot','pizda','jebat','debil','idiot','blbec'
-        ];
-        const showError = (msg) => {
-            let err = document.getElementById('nameError');
-            if (!err) {
-                err = document.createElement('div');
-                err.id = 'nameError';
-                err.style.cssText = 'font-family:"Press Start 2P",monospace;font-size:8px;color:#FF5722;margin-top:8px;line-height:1.6;';
-                document.getElementById('nameInput').insertAdjacentElement('afterend', err);
-            }
-            err.textContent = msg;
-        };
-
         const submit = () => {
             const val = document.getElementById('nameInput')?.value?.trim();
-            if (!val) return;
-            // Povolené znaky: písmena, čísla, mezera, _ -
-            if (!/^[a-zA-Z0-9 _\-]+$/.test(val)) {
-                showError('Only letters, numbers, _ and - allowed!');
-                return;
-            }
-            const lower = val.toLowerCase();
-            if (BAD_WORDS.some(w => lower.includes(w))) {
-                showError('Please choose a different name.');
-                return;
-            }
-            this._submit(val);
+            if (val) this._submit(val);
         };
         const skip = () => {
             this._removeOverlay();
@@ -211,41 +131,17 @@ class GameOverScene extends Phaser.Scene {
         this.submitted = true;
         this._removeOverlay();
 
-        // Lokální záloha vždy
         const lb = JSON.parse(localStorage.getItem('mc_hovinko_v2') || '[]');
         lb.push({ name, score: this.finalScore });
         lb.sort((a, b) => b.score - a.score);
         localStorage.setItem('mc_hovinko_v2', JSON.stringify(lb.slice(0, 10)));
 
-        // Zobrazíme loading stav
-        this._showLoading();
-
-        // Pošleme do Supabase a načteme globální žebříček
-        window.dbInsertScore(name, this.finalScore).then(() => {
-            return window.dbGetTopScores();
-        }).then(data => {
-            if (data) {
-                this._showLeaderboard(data, true);
-            } else {
-                this._showLeaderboard(lb.slice(0, 10), false);
-            }
-        }).catch(() => {
-            this._showLeaderboard(lb.slice(0, 10), false);
-        });
+        this._showLeaderboard(lb.slice(0, 10));
     }
 
-    _showLoading() {
-        const W = this.scale.width, H = this.scale.height;
-        this.loadingTxt = this.add.text(W / 2, H / 2 + 100, 'Saving score...', {
-            fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
-            fill: '#aaa', stroke: '#000', strokeThickness: 2
-        }).setOrigin(0.5).setDepth(10);
-    }
-
-    _showLeaderboard(board, isGlobal = false) {
+    _showLeaderboard(board) {
         const W = this.scale.width, H = this.scale.height;
         this.children.removeAll(true);
-        this._removeScrollDiv();
 
         // Background
         const sky = this.add.graphics();
@@ -254,113 +150,67 @@ class GameOverScene extends Phaser.Scene {
         this.add.tileSprite(0, H - 100, W, 100, 'ground').setOrigin(0, 0);
         this.add.graphics().fillStyle(0x000000, 0.82).fillRect(0, 0, W, H);
 
-        // Panel — sahá až dolů aby pokryl i buttony
+        // Panel
         const panel = this.add.graphics();
         panel.fillStyle(0x111111, 0.94);
-        panel.fillRoundedRect(18, 15, W - 36, H - 22, 16);
+        panel.fillRoundedRect(18, 15, W - 36, H - 30, 16);
         panel.lineStyle(4, 0xFFD700);
-        panel.strokeRoundedRect(18, 15, W - 36, H - 22, 16);
+        panel.strokeRoundedRect(18, 15, W - 36, H - 30, 16);
 
-        this.add.text(W / 2, 48, '🏆 TOP PLAYERS', {
+        this.add.text(W / 2, 55, '🏆 NEJLEPŠÍ HRÁČI', {
             fontFamily: '"Press Start 2P", monospace', fontSize: '13px', fill: '#FFD700'
         }).setOrigin(0.5);
 
-        const canvas = this.game.canvas;
-        const rect   = canvas.getBoundingClientRect();
-        const sx = rect.width  / W;
-        const sy = rect.height / H;
+        // Divider
+        const div = this.add.graphics();
+        div.lineStyle(2, 0xFFD700, 0.6);
+        div.lineBetween(36, 74, W - 36, 74);
 
-        const localData = JSON.parse(localStorage.getItem('mc_hovinko_v2') || '[]');
-        const globalData = board;
-        let activeTab = isGlobal ? 'global' : 'local';
+        const medals = ['🥇', '🥈', '🥉'];
+        board.forEach((e, i) => {
+            const y   = 90 + i * 46;
+            const top = i < 3;
+            const col = top ? ['#FFD700', '#E0E0E0', '#CD7F32'][i] : '#ddd';
 
-        // Tabs
-        const tabStyle = (active) => `
-            flex:1; padding:8px 0; cursor:pointer;
-            font-family:'Press Start 2P',monospace; font-size:8px;
-            border-radius:8px; text-align:center; border:none;
-            background:${active ? '#FFD700' : 'rgba(255,215,0,0.08)'};
-            color:${active ? '#111' : '#FFD700'};
-            border:2px solid ${active ? '#FFD700' : 'rgba(255,215,0,0.3)'};
-        `;
-        this.tabsDiv = document.createElement('div');
-        this.tabsDiv.style.cssText = `
-            position:fixed;
-            left:${rect.left + 26 * sx}px; top:${rect.top + 64 * sy}px;
-            width:${(W - 52) * sx}px; display:flex; gap:6px; z-index:201;
-        `;
-        this.tabsDiv.innerHTML = `
-            <button id="goTabGlobal" style="${tabStyle(activeTab==='global')}">🌍 GLOBAL</button>
-            <button id="goTabLocal"  style="${tabStyle(activeTab==='local')}">⭐ MY BEST</button>
-        `;
-        document.body.appendChild(this.tabsDiv);
-
-        // Scroll list
-        this.scrollDiv = document.createElement('div');
-        this.scrollDiv.style.cssText = `
-            position:fixed;
-            left:${rect.left + 26 * sx}px; top:${rect.top + 102 * sy}px;
-            width:${(W - 52) * sx}px; height:${(H - 102 - 100) * sy}px;
-            overflow-y:auto; -webkit-overflow-scrolling:touch;
-            z-index:200; scrollbar-width:thin; scrollbar-color:#FFD700 #111;
-        `;
-        document.body.appendChild(this.scrollDiv);
-
-        const renderRows = (data) => {
-            this.scrollDiv.innerHTML = '';
-            if (!data.length) {
-                this.scrollDiv.innerHTML = `<div style="text-align:center;color:#aaa;font-family:'Press Start 2P',monospace;font-size:9px;padding:40px 0">No records yet!</div>`;
-                return;
+            // Row highlight for top 3
+            if (top) {
+                const rowBg = this.add.graphics();
+                rowBg.fillStyle(
+                    [0xFFD700, 0xC0C0C0, 0xCD7F32][i], 0.08
+                );
+                rowBg.fillRoundedRect(28, y - 6, W - 56, 38, 4);
             }
-            const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
-            data.forEach((e, i) => {
-                const top3 = i < 3;
-                const col  = top3 ? ['#FFD700','#E0E0E0','#CD7F32'][i] : '#ccc';
-                const bg   = top3 ? ['rgba(255,215,0,0.09)','rgba(192,192,192,0.09)','rgba(205,127,50,0.09)'][i] : 'transparent';
-                const row  = document.createElement('div');
-                row.style.cssText = `
-                    display:flex; justify-content:space-between; align-items:center;
-                    padding:${top3 ? 9 : 7}px 8px; margin-bottom:2px;
-                    background:${bg}; border-radius:4px;
-                    font-family:'Press Start 2P',monospace;
-                    font-size:${top3 ? 10 : 9}px; color:${col};
-                    ${top3 ? `border-left:3px solid ${col};` : ''}
-                `;
-                row.innerHTML = `<span>${i < 3 ? medals[i] : `${i+1}.`} ${e.name.substring(0,12)}</span><span style="color:#FFD700">${e.score} \uD83D\uDCA9</span>`;
-                this.scrollDiv.appendChild(row);
-            });
-        };
 
-        const switchTab = (tab) => {
-            activeTab = tab;
-            document.getElementById('goTabGlobal').style.cssText = tabStyle(tab === 'global');
-            document.getElementById('goTabLocal').style.cssText  = tabStyle(tab === 'local');
-            renderRows(tab === 'global' ? globalData : localData);
-        };
+            this.add.text(38, y + 8, `${medals[i] ?? (i + 1) + '.'}  ${e.name.substring(0, 11)}`, {
+                fontFamily: '"Press Start 2P", monospace',
+                fontSize: top ? 11 : 10, fill: col
+            }).setOrigin(0, 0.5);
 
-        document.getElementById('goTabGlobal').addEventListener('click', () => switchTab('global'));
-        document.getElementById('goTabLocal').addEventListener('click',  () => switchTab('local'));
-        renderRows(activeTab === 'global' ? globalData : localData);
+            this.add.text(W - 38, y + 8, `${e.score} 💩`, {
+                fontFamily: '"Press Start 2P", monospace', fontSize: 11, fill: '#FFD700'
+            }).setOrigin(1, 0.5);
+        });
+
+        if (!board.length) {
+            this.add.text(W / 2, H / 2, 'Zatím žádné záznamy!\n🎮', {
+                fontFamily: '"Press Start 2P", monospace', fontSize: '11px',
+                fill: '#aaa', align: 'center'
+            }).setOrigin(0.5);
+        }
 
         // Tlačítka
-        this._makeBtn(W / 2, H - 76, '▶ PLAY AGAIN', 0x4CAF50, 0x2e7d32,
-            () => { this._removeScrollDiv(); this.scene.start('GameScene'); }, W - 60);
-        this._makeBtn(W / 2, H - 36, 'MENU', 0x1565C0, 0x0D47A1,
-            () => { this._removeScrollDiv(); this.scene.start('MenuScene'); }, W - 60);
-    }
-
-    _removeScrollDiv() {
-        ['scrollDiv', 'tabsDiv'].forEach(key => {
-            if (this[key]?.parentNode) { this[key].parentNode.removeChild(this[key]); this[key] = null; }
-        });
+        this._makeBtn(W / 2 - 60, H - 55, '▶ ZNOVU', 0x4CAF50, 0x2e7d32,
+            () => this.scene.start('GameScene'), 100);
+        this._makeBtn(W / 2 + 70, H - 55, 'MENU', 0x1565C0, 0x0D47A1,
+            () => this.scene.start('MenuScene'), 100);
     }
 
     _makeBtn(x, y, label, fill, border, cb, bW = 210) {
-        const bH = 38;
+        const bH = 46;
         const bg = this.add.graphics();
-        bg.fillStyle(fill, 1);      bg.fillRoundedRect(x - bW/2, y - bH/2, bW, bH, 8);
-        bg.lineStyle(2, 0xFFD700, 0.35); bg.strokeRoundedRect(x - bW/2, y - bH/2, bW, bH, 8);
-        bg.fillStyle(0xffffff, 0.15); bg.fillRoundedRect(x - bW/2 + 3, y - bH/2 + 3, bW - 6, bH/2 - 3, 5);
+        bg.fillStyle(fill, 1);   bg.fillRoundedRect(x - bW/2, y - bH/2, bW, bH, 10);
+        bg.lineStyle(3, border); bg.strokeRoundedRect(x - bW/2, y - bH/2, bW, bH, 10);
+        bg.fillStyle(0xffffff, 0.22); bg.fillRoundedRect(x - bW/2 + 4, y - bH/2 + 4, bW - 8, bH/2 - 4, 6);
         bg.setInteractive(new Phaser.Geom.Rectangle(x - bW/2, y - bH/2, bW, bH), Phaser.Geom.Rectangle.Contains);
         bg.on('pointerover',  () => bg.setAlpha(0.82));
         bg.on('pointerout',   () => bg.setAlpha(1));
@@ -372,6 +222,6 @@ class GameOverScene extends Phaser.Scene {
     }
 
     // Cleanup při opuštění scény
-    shutdown() { this._removeOverlay(); this._removeScrollDiv(); }
-    destroy()   { this._removeOverlay(); this._removeScrollDiv(); }
+    shutdown() { this._removeOverlay(); }
+    destroy()   { this._removeOverlay(); }
 }
