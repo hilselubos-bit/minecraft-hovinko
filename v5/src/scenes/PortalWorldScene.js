@@ -62,24 +62,29 @@ class PortalWorldScene extends Phaser.Scene {
 
     // ── Planets drifting through space ────────────────────────────────────────
     _buildPlanets() {
-        // In order from the Sun: Earth (3rd), Saturn (6th), Uranus (7th), Neptune (8th)
+        // Full solar system in order, staggered across ~6 screen widths so they arrive one by one
+        // y kept in top 28% so they never overlap the tunnel gameplay area
         const defs = [
-            { key: 'planet_earth',   label: '🌍 Země',   scale: 0.9, spd: 14, y: 0.18, x0: 0.1  },
-            { key: 'planet_saturn',  label: '🪐 Saturn',  scale: 1.0, spd: 10, y: 0.38, x0: 1.3  },
-            { key: 'planet_uranus',  label: '🔵 Uran',    scale: 0.85,spd: 17, y: 0.26, x0: 0.55 },
-            { key: 'planet_neptune', label: '🔵 Neptun',  scale: 0.8, spd: 12, y: 0.46, x0: 1.7  },
+            { key: 'planet_mercury', label: 'Mercury', scale: 0.30, spd: 18, y: 0.08, x0: 0.05 },
+            { key: 'planet_venus',   label: 'Venus',   scale: 0.32, spd: 15, y: 0.20, x0: 0.85 },
+            { key: 'planet_earth',   label: 'Earth',   scale: 0.34, spd: 14, y: 0.10, x0: 1.65 },
+            { key: 'planet_mars',    label: 'Mars',    scale: 0.30, spd: 16, y: 0.22, x0: 2.45 },
+            { key: 'planet_jupiter', label: 'Jupiter', scale: 0.40, spd: 11, y: 0.12, x0: 3.25 },
+            { key: 'planet_saturn',  label: 'Saturn',  scale: 0.36, spd:  9, y: 0.24, x0: 4.05 },
+            { key: 'planet_uranus',  label: 'Uranus',  scale: 0.32, spd: 12, y: 0.14, x0: 4.85 },
+            { key: 'planet_neptune', label: 'Neptune', scale: 0.30, spd: 10, y: 0.26, x0: 5.65 },
         ];
+        const sty = {
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '6px', fill: '#aabbdd',
+            stroke: '#000014', strokeThickness: 2
+        };
         this._planets = defs.map(d => {
             const img = this.add.image(this.W * d.x0, this.H * d.y, d.key)
-                .setScale(d.scale).setAlpha(0.75).setDepth(0.8);
-            const sty = {
-                fontFamily: '"Press Start 2P", monospace',
-                fontSize: '7px', fill: '#ccddff',
-                stroke: '#000', strokeThickness: 2
-            };
-            const lbl = this.add.text(img.x, img.y + img.displayHeight * 0.5 + 6, d.label, sty)
-                .setOrigin(0.5, 0).setDepth(0.9).setAlpha(0.75);
-            return { img, lbl, spd: d.spd, scale: d.scale };
+                .setScale(d.scale).setAlpha(0.55).setDepth(0.5);
+            const lbl = this.add.text(img.x, img.y + img.displayHeight * 0.5 + 5, d.label, sty)
+                .setOrigin(0.5, 0).setDepth(0.5).setAlpha(0.55);
+            return { img, lbl, spd: d.spd };
         });
     }
 
@@ -175,8 +180,10 @@ class PortalWorldScene extends Phaser.Scene {
     // ── Spawn regular object near vanishing point ──────────────────────────────
     _spawnObject(vpX, vpY) {
         const targetX = 40 + Math.random() * (this.W - 80);
+        // Poop gets a pale/ghostly tint so it's visible against dark space
         const sprite  = this.add.image(vpX, vpY, this.itemKey)
-            .setScale(0.10).setAlpha(0.15).setDepth(3);
+            .setScale(0.10).setAlpha(0.15).setDepth(3)
+            .setTint(this.itemKey === 'poop' ? 0xddeeff : 0xffffff);
         this.objects.push({
             startX: vpX, startY: vpY,
             targetX,
@@ -190,8 +197,8 @@ class PortalWorldScene extends Phaser.Scene {
     // ── Spawn magnet power-up ──────────────────────────────────────────────────
     _spawnMagnet(vpX, vpY) {
         const targetX = 80 + Math.random() * (this.W - 160);
-        const sprite  = this.add.image(vpX, vpY, 'powerup_star')
-            .setScale(0.05).setAlpha(0.2).setDepth(6).setTint(0x00eeff);
+        const sprite  = this.add.image(vpX, vpY, 'powerup_magnet')
+            .setScale(0.05).setAlpha(0.2).setDepth(6);
         this.magnets.push({
             startX: vpX, startY: vpY,
             targetX,
@@ -261,10 +268,8 @@ class PortalWorldScene extends Phaser.Scene {
         this._planets.forEach(p => {
             p.img.x -= p.spd * dt;
             p.lbl.x  = p.img.x;
-            p.lbl.y  = p.img.y + p.img.displayHeight * 0.5 + 6;
-            // Wrap around when off-screen left
-            if (p.img.x < -120) {
-                p.img.x = this.W + 120;
+            if (p.img.x < -140) {
+                p.img.x = this.W + 140;
                 p.lbl.x = p.img.x;
             }
         });
