@@ -75,16 +75,25 @@ class PortalWorldScene extends Phaser.Scene {
     _buildHUD() {
         const sty = {
             fontFamily: '"Press Start 2P", monospace',
-            fontSize: '11px', fill: '#FFD700',
+            fontSize: '13px', fill: '#FFD700',
             stroke: '#000', strokeThickness: 3
         };
-        this.scoreTxt = this.add.text(13, 17, `Score: ${this.score}`, sty).setDepth(25);
-        this.timeTxt  = this.add.text(this.W - 13, 17, '30s', sty).setOrigin(1, 0).setDepth(25);
-        this.hearts   = [];
+        // Score — left (same as main scene)
+        this.add.text(13, 17, 'Score:', sty).setDepth(25);
+        this.scoreTxt = this.add.text(108, 17, `${this.score}`, sty).setDepth(25);
+
+        // Timer — center (where level txt is in main scene)
+        this.timeTxt = this.add.text(this.W / 2, 16, '30s', {
+            ...sty, fontSize: '10px', fill: '#FF7043'
+        }).setOrigin(0.5, 0).setDepth(25);
+
+        // Hearts — right (same as main scene)
+        this.hearts = [];
         for (let i = 0; i < 5; i++) {
             this.hearts.push(
-                this.add.image(13 + i * 28, 50, i < this.lives ? 'heart_full' : 'heart_empty')
-                    .setScale(0.7).setDepth(25)
+                this.add.text(this.W - 18 - i * 24, 17, '\u2665', {
+                    ...sty, fontSize: '11px', fill: '#FF3B3B'
+                }).setDepth(25)
             );
         }
     }
@@ -295,12 +304,15 @@ class PortalWorldScene extends Phaser.Scene {
         o.sprite.destroy();
         this.objects.splice(idx, 1);
         this.score += 5 * (this.sharedStar > 0 ? 2 : 1);
-        this.scoreTxt.setText(`Score: ${this.score}`);
+        this.scoreTxt.setText(`${this.score}`);
     }
 
     _miss() {
         this.lives = Math.max(0, this.lives - 1);
-        this.hearts.forEach((h, i) => h.setTexture(i < this.lives ? 'heart_full' : 'heart_empty'));
+        this.hearts.forEach((h, i) => {
+            h.setText(i < this.lives ? '\u2665' : '\u2661');
+            h.setColor(i < this.lives ? '#FF3B3B' : '#888888');
+        });
         this.cameras.main.shake(200, 0.012);
         if (this.lives <= 0) this._leave();
     }
