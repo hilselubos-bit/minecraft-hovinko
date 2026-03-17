@@ -479,6 +479,151 @@ function drawSoapFrame(g, ox, fr) {
     g.restore();
 }
 
+// ─── Shovel (lopatka) character sheet — turbo nozzles ────────────────────────
+function buildShovelSheet() {
+    const c = document.createElement('canvas');
+    c.width = 208; c.height = 76;
+    const g = c.getContext('2d');
+    [0, 1, 2, 3].forEach(f => drawShovelFrame(g, f * 52, f));
+    return c;
+}
+
+function drawShovelFrame(g, ox, fr) {
+    const cx = ox + 26;
+    const tilts = [0, 8, 0, -8];
+    const tilt = tilts[fr] * Math.PI / 180;
+    const hasFlame = fr === 1 || fr === 3;
+
+    g.save();
+    g.translate(cx, 76); g.rotate(tilt); g.translate(-cx, -76);
+
+    // === Blade (drawn first — behind body) ===
+    g.fillStyle = '#1976D2';
+    g.beginPath();
+    g.moveTo(cx - 22, 57); g.lineTo(cx + 22, 57);
+    g.lineTo(cx + 25, 72); g.lineTo(cx - 25, 72);
+    g.closePath(); g.fill();
+    // Blade highlight
+    g.fillStyle = 'rgba(255,255,255,0.22)';
+    g.beginPath();
+    g.moveTo(cx - 20, 58); g.lineTo(cx - 10, 58);
+    g.lineTo(cx - 12, 70); g.lineTo(cx - 21, 70);
+    g.closePath(); g.fill();
+    // Blade rim
+    g.fillStyle = '#42A5F5';
+    g.fillRect(cx - 25, 71, 50, 3);
+    g.strokeStyle = '#0D47A1'; g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(cx - 22, 57); g.lineTo(cx + 22, 57);
+    g.lineTo(cx + 25, 72); g.lineTo(cx - 25, 72);
+    g.closePath(); g.stroke();
+
+    // === Handle body ===
+    g.fillStyle = '#1E88E5';
+    g.fillRect(cx - 7, 14, 14, 45);
+    g.fillStyle = 'rgba(255,255,255,0.18)';
+    g.fillRect(cx - 5, 16, 4, 41);
+    g.strokeStyle = '#0D47A1'; g.lineWidth = 1.5;
+    g.strokeRect(cx - 7, 14, 14, 45);
+
+    // === Left thruster pod ===
+    g.fillStyle = '#455A64';
+    g.fillRect(cx - 21, 32, 12, 20);
+    g.fillStyle = '#607D8B';
+    g.fillRect(cx - 20, 33, 4, 18);
+    g.strokeStyle = '#263238'; g.lineWidth = 1;
+    g.strokeRect(cx - 21, 32, 12, 20);
+    g.strokeStyle = '#546E7A'; g.lineWidth = 0.8;
+    [36, 40, 44].forEach(y => { g.beginPath(); g.moveTo(cx - 21, y); g.lineTo(cx - 9, y); g.stroke(); });
+    // Left nozzle
+    g.fillStyle = '#263238';
+    g.beginPath();
+    g.moveTo(cx - 21, 38); g.lineTo(cx - 21, 46);
+    g.lineTo(cx - 25, 45); g.lineTo(cx - 25, 39);
+    g.closePath(); g.fill();
+
+    // === Right thruster pod ===
+    g.fillStyle = '#455A64';
+    g.fillRect(cx + 9, 32, 12, 20);
+    g.fillStyle = '#607D8B';
+    g.fillRect(cx + 17, 33, 4, 18);
+    g.strokeStyle = '#263238'; g.lineWidth = 1;
+    g.strokeRect(cx + 9, 32, 12, 20);
+    g.strokeStyle = '#546E7A'; g.lineWidth = 0.8;
+    [36, 40, 44].forEach(y => { g.beginPath(); g.moveTo(cx + 9, y); g.lineTo(cx + 21, y); g.stroke(); });
+    // Right nozzle
+    g.fillStyle = '#263238';
+    g.beginPath();
+    g.moveTo(cx + 21, 38); g.lineTo(cx + 21, 46);
+    g.lineTo(cx + 25, 45); g.lineTo(cx + 25, 39);
+    g.closePath(); g.fill();
+
+    // === Top cap + speed fins ===
+    g.fillStyle = '#0D47A1';
+    g.beginPath(); g.arc(cx, 14, 8, Math.PI, 0); g.closePath(); g.fill();
+    g.fillStyle = '#FFD700';
+    g.beginPath(); g.moveTo(cx - 6, 11); g.lineTo(cx - 13, 4); g.lineTo(cx - 4, 10); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(cx + 6, 11); g.lineTo(cx + 13, 4); g.lineTo(cx + 4, 10); g.closePath(); g.fill();
+    g.fillStyle = '#42A5F5';
+    g.beginPath(); g.arc(cx - 2, 12, 2.5, 0, Math.PI * 2); g.fill();
+
+    // === Flames from side nozzles (walk frames) ===
+    if (hasFlame) {
+        // Left: glow + triangle
+        g.fillStyle = 'rgba(255,120,0,0.45)';
+        g.beginPath(); g.ellipse(cx - 22, 42, 4, 6, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(255,200,0,0.92)';
+        g.beginPath(); g.moveTo(cx - 21, 39); g.lineTo(cx - 21, 45); g.lineTo(cx - 25, 42); g.closePath(); g.fill();
+        g.fillStyle = '#fff';
+        g.beginPath(); g.arc(cx - 25, 42, 1.2, 0, Math.PI * 2); g.fill();
+        // Right: glow + triangle
+        g.fillStyle = 'rgba(255,120,0,0.45)';
+        g.beginPath(); g.ellipse(cx + 22, 42, 4, 6, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(255,200,0,0.92)';
+        g.beginPath(); g.moveTo(cx + 21, 39); g.lineTo(cx + 21, 45); g.lineTo(cx + 25, 42); g.closePath(); g.fill();
+        g.fillStyle = '#fff';
+        g.beginPath(); g.arc(cx + 25, 42, 1.2, 0, Math.PI * 2); g.fill();
+    }
+
+    // === Face on handle ===
+    const faceY = 36;
+    g.fillStyle = 'rgba(255,120,100,0.3)';
+    g.beginPath(); g.arc(cx - 5, faceY + 5, 4, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 5, faceY + 5, 4, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#0A2744'; g.lineWidth = 1.5;
+    if (fr === 1 || fr === 3) {
+        g.beginPath(); g.moveTo(cx - 6, faceY - 5); g.lineTo(cx - 1, faceY - 7); g.stroke();
+        g.beginPath(); g.moveTo(cx + 1, faceY - 7); g.lineTo(cx + 6, faceY - 5); g.stroke();
+    } else if (fr === 2) {
+        g.beginPath(); g.moveTo(cx - 6, faceY - 6); g.lineTo(cx - 1, faceY - 8); g.stroke();
+        g.beginPath(); g.moveTo(cx + 1, faceY - 8); g.lineTo(cx + 6, faceY - 6); g.stroke();
+    } else {
+        g.beginPath(); g.moveTo(cx - 6, faceY - 4); g.lineTo(cx - 1, faceY - 4); g.stroke();
+        g.beginPath(); g.moveTo(cx + 1, faceY - 4); g.lineTo(cx + 6, faceY - 4); g.stroke();
+    }
+    const eyeH = fr === 2 ? 3.8 : fr === 0 ? 3.0 : 3.3;
+    g.fillStyle = '#fff';
+    g.beginPath(); g.ellipse(cx - 3.5, faceY, 2.8, eyeH, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx + 3.5, faceY, 2.8, eyeH, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#0A2744';
+    g.beginPath(); g.arc(cx - 3, faceY + 0.5, 1.3, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 4, faceY + 0.5, 1.3, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath(); g.arc(cx - 2.5, faceY - 0.5, 0.6, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 4.5, faceY - 0.5, 0.6, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#0A2744'; g.lineWidth = 1.5;
+    const mY = faceY + 8;
+    if (fr === 2) {
+        g.beginPath(); g.arc(cx, mY - 2, 4.5, 0.1 * Math.PI, 0.9 * Math.PI); g.stroke();
+    } else if (fr === 1 || fr === 3) {
+        g.beginPath(); g.arc(cx, mY, 2.2, 0, Math.PI * 2); g.stroke();
+    } else {
+        g.beginPath(); g.arc(cx, mY - 1, 3, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+    }
+
+    g.restore();
+}
+
 // ─── BootScene ───────────────────────────────────────────────────────────────
 class BootScene extends Phaser.Scene {
     constructor() { super('BootScene'); }
@@ -490,6 +635,7 @@ class BootScene extends Phaser.Scene {
         this._makeBucket();
         this._makeBroom();
         this._makeSoap();
+        this._makeShovel();
         this._makeToilet();
         this._makeToiletPaper();
         this._makeGround();
@@ -546,6 +692,13 @@ class BootScene extends Phaser.Scene {
         this.textures.addSpriteSheet('soap', sheet, { frameWidth: 52, frameHeight: 76 });
         this.anims.create({ key: 'soap_idle', frames: [{ key: 'soap', frame: 0 }], frameRate: 1 });
         this.anims.create({ key: 'soap_walk', frames: this.anims.generateFrameNumbers('soap', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+    }
+
+    _makeShovel() {
+        const sheet = buildShovelSheet();
+        this.textures.addSpriteSheet('shovel', sheet, { frameWidth: 52, frameHeight: 76 });
+        this.anims.create({ key: 'shovel_idle', frames: [{ key: 'shovel', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'shovel_walk', frames: this.anims.generateFrameNumbers('shovel', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
     }
 
     _makeToilet() {

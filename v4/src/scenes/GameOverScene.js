@@ -12,13 +12,19 @@ class GameOverScene extends Phaser.Scene {
             localStorage.setItem('mc_best_score', String(this.finalScore));
         }
 
-        // Soap unlock at 250
+        // Character unlocks
         const unlocks = JSON.parse(localStorage.getItem('mc_unlocks') || '{}');
-        this.newUnlock = false;
+        this.newUnlock = null;
         if (this.finalScore >= 250 && !unlocks.soap) {
             unlocks.soap = true;
+            this.newUnlock = 'SOAP';
+        }
+        if (this.finalScore >= 500 && !unlocks.shovel) {
+            unlocks.shovel = true;
+            this.newUnlock = 'SHOVEL';
+        }
+        if (this.newUnlock) {
             localStorage.setItem('mc_unlocks', JSON.stringify(unlocks));
-            this.newUnlock = true;
         }
     }
 
@@ -87,7 +93,7 @@ class GameOverScene extends Phaser.Scene {
                     border-radius:8px;padding:8px 10px;
                     margin-bottom:12px;line-height:1.8;
                     text-shadow:0 0 8px rgba(0,230,118,0.5);
-                ">🔓 SOAP UNLOCKED!<br><span style="font-size:7px;color:#aaa">New character in settings!</span></div>
+                ">🔓 ${this.newUnlock} UNLOCKED!<br><span style="font-size:7px;color:#aaa">New character in settings!</span></div>
                 ` : ''}
 
                 <div style="

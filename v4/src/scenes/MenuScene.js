@@ -83,7 +83,7 @@ class MenuScene extends Phaser.Scene {
     // ── Walking Steve ─────────────────────────────────────────────────────────
     _buildWalkingSteve(W, H) {
         const cfg = JSON.parse(localStorage.getItem('mc_hovinko_settings') || '{}');
-        const validChars = ['toilet_char', 'bucket', 'broom', 'soap'];
+        const validChars = ['toilet_char', 'bucket', 'broom', 'soap', 'shovel'];
         const charKey = validChars.includes(cfg.char) ? cfg.char : 'toilet_char';
         this.walkSteve = this.add.sprite(80, H - 130, charKey).setScale(1.3);
         this.walkSteve.anims.play(`${charKey}_walk`);
@@ -313,13 +313,14 @@ class MenuScene extends Phaser.Scene {
             { key: 'toilet_char', label: 'TOILET' },
             { key: 'bucket',      label: 'BUCKET'  },
             { key: 'broom',       label: 'BROOM'   },
-            { key: 'soap',        label: 'SOAP', special: true }
+            { key: 'soap',        label: 'SOAP',   special: true, unlockKey: 'soap',   unlockScore: 250, badge: '⚡ FASTER!'  },
+            { key: 'shovel',      label: 'SHOVEL', special: true, unlockKey: 'shovel', unlockScore: 500, badge: '⚡⚡ TURBO!'  }
         ];
         chars.forEach((ch, i) => {
-            const bx = 70 + i * 115, by = 180;
+            const bx = 48 + i * 96, by = 180;
             const sel = s.char === ch.key;
-            const locked = ch.special && !unlocks.soap;
-            const bHalf = 44;
+            const locked = ch.special && !unlocks[ch.unlockKey];
+            const bHalf = 40;
             const box = T(this.add.graphics().setDepth(D + 1));
             box.fillStyle(locked ? 0x181818 : (sel ? 0x4A148C : 0x1a1a1a), 1);
             box.fillRoundedRect(bx - bHalf, by - 62, bHalf * 2, 116, 8);
@@ -347,7 +348,7 @@ class MenuScene extends Phaser.Scene {
                 T(this.add.text(bx, by + 62, 'LOCKED', {
                     fontFamily: '"Press Start 2P", monospace', fontSize: '10px', fill: '#aaa'
                 }).setOrigin(0.5).setDepth(D + 2));
-                T(this.add.text(bx, by + 79, '250 pts', {
+                T(this.add.text(bx, by + 79, `${ch.unlockScore} pts`, {
                     fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#999'
                 }).setOrigin(0.5).setDepth(D + 2));
                 T(this.add.text(bx, by + 95, '⚡ faster', {
@@ -358,7 +359,7 @@ class MenuScene extends Phaser.Scene {
                     const badge = T(this.add.graphics().setDepth(D + 2));
                     badge.fillStyle(0xFFAB00, 1);
                     badge.fillRoundedRect(bx - bHalf + 2, by - 62 + 2, bHalf * 2 - 4, 14, 4);
-                    T(this.add.text(bx, by - 55, '⚡ FASTER!', {
+                    T(this.add.text(bx, by - 55, ch.badge, {
                         fontFamily: '"Press Start 2P", monospace', fontSize: '5px', fill: '#111'
                     }).setOrigin(0.5).setDepth(D + 3));
                 }

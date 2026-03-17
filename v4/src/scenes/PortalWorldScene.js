@@ -356,7 +356,7 @@ class PortalWorldScene extends Phaser.Scene {
         if (this.portalSec <= 0) { this._leave(); return; }
 
         // Pohyb hráče
-        const spd = this.charKey === 'soap' ? 650 : 560;
+        const spd = this.charKey === 'shovel' ? 780 : this.charKey === 'soap' ? 650 : 560;
         let vx = 0;
         if (this.cursors.left.isDown  || this.wasd.A.isDown) vx = -spd;
         if (this.cursors.right.isDown || this.wasd.D.isDown) vx =  spd;
