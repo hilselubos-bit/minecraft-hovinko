@@ -17,6 +17,7 @@ class PortalWorldScene extends Phaser.Scene {
     create() {
         this.W = this.scale.width;
         this.H = this.scale.height;
+        PortalWorldScene._entry = ((PortalWorldScene._entry || 0) + 1);
 
         this.score     = this.sharedScore;
         this.lives     = this.sharedLives;
@@ -64,20 +65,22 @@ class PortalWorldScene extends Phaser.Scene {
     _buildPlanets() {
         // Full solar system in order, staggered across ~6 screen widths so they arrive one by one
         // y kept in top 28% so they never overlap the tunnel gameplay area
-        // Solar system in strict order — all same speed so ordering is preserved
-        // Mercury starts just off-screen right so it appears within first seconds
         const SPD = 42;
-        const defs = [
-            { key: 'planet_mercury', label: 'Mercury', scale: 1.04, spd: SPD, y: 0.10, x0: 1.05 },
-            { key: 'planet_venus',   label: 'Venus',   scale: 1.24, spd: SPD, y: 0.24, x0: 1.65 },
-            { key: 'planet_earth',   label: 'Earth',   scale: 1.32, spd: SPD, y: 0.11, x0: 2.25 },
-            { key: 'planet_mars',    label: 'Mars',    scale: 1.12, spd: SPD, y: 0.26, x0: 2.85 },
-            { key: 'planet_jupiter', label: 'Jupiter', scale: 1.76, spd: SPD, y: 0.13, x0: 3.55 },
-            { key: 'planet_saturn',  label: 'Saturn',  scale: 1.56, spd: SPD, y: 0.25, x0: 4.35 },
-            { key: 'planet_uranus',  label: 'Uranus',  scale: 1.32, spd: SPD, y: 0.12, x0: 5.05 },
-            { key: 'planet_neptune', label: 'Neptune', scale: 1.24, spd: SPD, y: 0.27, x0: 5.65 },
-            { key: 'planet_pluto',   label: 'Pluto',   scale: 1.00, spd: SPD, y: 0.10, x0: 6.25 },
+        const allPlanets = [
+            { key: 'planet_mercury', label: 'Mercury', scale: 1.04, y: 0.10 },
+            { key: 'planet_venus',   label: 'Venus',   scale: 1.24, y: 0.24 },
+            { key: 'planet_earth',   label: 'Earth',   scale: 1.32, y: 0.11 },
+            { key: 'planet_mars',    label: 'Mars',    scale: 1.12, y: 0.26 },
+            { key: 'planet_jupiter', label: 'Jupiter', scale: 1.76, y: 0.13 },
+            { key: 'planet_saturn',  label: 'Saturn',  scale: 1.56, y: 0.25 },
+            { key: 'planet_uranus',  label: 'Uranus',  scale: 1.32, y: 0.12 },
+            { key: 'planet_neptune', label: 'Neptune', scale: 1.24, y: 0.27 },
+            { key: 'planet_pluto',   label: 'Pluto',   scale: 1.00, y: 0.10 },
         ];
+        // Alternate: odd entries start from Mercury (0), even entries start from Jupiter (4)
+        const offset = PortalWorldScene._entry % 2 === 0 ? 4 : 0;
+        const ordered = [...allPlanets.slice(offset), ...allPlanets.slice(0, offset)];
+        const defs = ordered.map((p, i) => ({ ...p, spd: SPD, x0: 1.05 + i * 0.60 }));
         const sty = {
             fontFamily: '"Press Start 2P", monospace',
             fontSize: '6px', fill: '#aabbdd',
