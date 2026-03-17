@@ -377,20 +377,27 @@ class MenuScene extends Phaser.Scene {
             fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#aaa'
         }).setOrigin(0, 0.5).setDepth(D + 1));
 
-        [{ key: 'toilet', label: 'TOILET' }, { key: 'toilet_paper', label: 'PAPER' }, { key: 'toilet_brush', label: 'BRUSH' }]
-        .forEach((it, i) => {
-            const bx = 102 + i * 138, by = 500;
+        [
+            { key: 'poop',         label: 'POOP'   },
+            { key: 'toilet',       label: 'TOILET' },
+            { key: 'toilet_paper', label: 'PAPER'  },
+            { key: 'toilet_brush', label: 'BRUSH'  }
+        ].forEach((it, i) => {
+            const bx = 63 + i * 90, by = 490;
+            const bHalf = 38;
             const sel = s.portalItem === it.key;
             const box = T(this.add.graphics().setDepth(D + 1));
             box.fillStyle(sel ? 0x1A237E : 0x1a1a1a, 1);
-            box.fillRoundedRect(bx - 52, by - 65, 104, 118, 8);
+            box.fillRoundedRect(bx - bHalf, by - 58, bHalf * 2, 104, 8);
             box.lineStyle(3, sel ? 0x7986CB : 0x444444, 1);
-            box.strokeRoundedRect(bx - 52, by - 65, 104, 118, 8);
-            box.setInteractive(new Phaser.Geom.Rectangle(bx - 52, by - 65, 104, 118), Phaser.Geom.Rectangle.Contains);
+            box.strokeRoundedRect(bx - bHalf, by - 58, bHalf * 2, 104, 8);
+            box.setInteractive(new Phaser.Geom.Rectangle(bx - bHalf, by - 58, bHalf * 2, 104), Phaser.Geom.Rectangle.Contains);
             box.on('pointerdown', () => { close(); this._showSettings(W, { ...s, portalItem: it.key }); });
-            T(this.add.image(bx, by - 10, it.key).setScale(0.85).setDepth(D + 2));
-            T(this.add.text(bx, by + 44, it.label, {
-                fontFamily: '"Press Start 2P", monospace', fontSize: '8px',
+            const icon = T(this.add.image(bx, by - 8, it.key).setScale(0.62).setDepth(D + 2));
+            // Poop gets the same light tint as in portal world
+            if (it.key === 'poop') icon.setTint(0xddeeff);
+            T(this.add.text(bx, by + 38, it.label, {
+                fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
                 fill: sel ? '#7986CB' : '#aaa'
             }).setOrigin(0.5).setDepth(D + 2));
         });
