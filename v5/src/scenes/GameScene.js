@@ -650,7 +650,7 @@ class GameScene extends Phaser.Scene {
     _initWeather() {
         const W = this.W, H = this.H;
         this._weatherType  = 'sunny';
-        this._weatherTimer = 90;
+        this._weatherTimer = 30;
         this._cloudMult    = 1;
         this._wState       = { rainAlpha: 0, windAlpha: 0 };
 
@@ -740,7 +740,7 @@ class GameScene extends Phaser.Scene {
         this._weatherTimer -= dt;
         if (this._weatherTimer <= 0) {
             this._changeWeather();
-            this._weatherTimer = 90;
+            this._weatherTimer = 30;
         }
 
         const W = this.W, H = this.H;
