@@ -342,13 +342,13 @@ class MenuScene extends Phaser.Scene {
                     .setOrigin(1, 0).setDepth(D + 3));
                 // Texty mimo orámování — pod boxem
                 T(this.add.text(bx, by + 62, 'LOCKED', {
-                    fontFamily: '"Press Start 2P", monospace', fontSize: '7px', fill: '#888'
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '10px', fill: '#aaa'
                 }).setOrigin(0.5).setDepth(D + 2));
-                T(this.add.text(bx, by + 76, '250 pts', {
-                    fontFamily: '"Press Start 2P", monospace', fontSize: '6px', fill: '#666'
+                T(this.add.text(bx, by + 79, '250 pts', {
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#999'
                 }).setOrigin(0.5).setDepth(D + 2));
-                T(this.add.text(bx, by + 89, '⚡ faster', {
-                    fontFamily: '"Press Start 2P", monospace', fontSize: '6px', fill: '#554400'
+                T(this.add.text(bx, by + 95, '⚡ faster', {
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#aa8800'
                 }).setOrigin(0.5).setDepth(D + 2));
             } else {
                 if (ch.special) {
