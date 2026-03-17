@@ -22,7 +22,7 @@ class PortalWorldScene extends Phaser.Scene {
         this.score     = this.sharedScore;
         this.lives     = this.sharedLives;
         this.shield    = this.sharedShield;
-        this.portalSec = 30;
+        this.portalSec = 50;
         this.isLeaving = false;
 
         this.objects    = [];
@@ -36,9 +36,9 @@ class PortalWorldScene extends Phaser.Scene {
         this.magnetSpawnCd  = 12 + Math.random() * 8;
         this._magnetTxt     = null;
 
-        // Spaceship hazard
-        this.ships          = [];
-        this.shipSpawnCd    = 12 + Math.random() * 10;
+        // Spaceship hazard — first appearance after 15-30s, then every 20-40s
+        this.ships       = [];
+        this.shipSpawnCd = 15 + Math.random() * 15;
 
         // Vanishing point — will oscillate to simulate tunnel turning
         this.vpTime  = 0;
@@ -125,7 +125,7 @@ class PortalWorldScene extends Phaser.Scene {
         this.scoreTxt = this.add.text(108, 17, `${this.score}`, sty).setDepth(25);
 
         // Timer — center (where level txt is in main scene)
-        this.timeTxt = this.add.text(this.W / 2, 16, '30s', {
+        this.timeTxt = this.add.text(this.W / 2, 16, '50s', {
             ...sty, fontSize: '10px', fill: '#FF7043'
         }).setOrigin(0.5, 0).setDepth(25);
 
@@ -266,7 +266,7 @@ class PortalWorldScene extends Phaser.Scene {
         this.shipSpawnCd -= dt;
         if (this.shipSpawnCd <= 0) {
             this._warnShip();
-            this.shipSpawnCd = 18 + Math.random() * 12;
+            this.shipSpawnCd = 20 + Math.random() * 20;
         }
 
         // ── Magnet countdown & pull ───────────────────────────────────────────
