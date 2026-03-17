@@ -352,7 +352,7 @@ class PortalWorldScene extends Phaser.Scene {
         for (let i = this.ships.length - 1; i >= 0; i--) {
             const s = this.ships[i];
             s.img.x += s.vx * dt;
-            if (Math.abs(s.img.x - this.player.x) < 62 && Math.abs(s.img.y - this.player.y) < 36) {
+            if (Math.abs(s.img.x - this.player.x) < 52 && Math.abs(s.img.y - this.player.y) < 28) {
                 s.img.destroy(); this.ships.splice(i, 1);
                 this._miss();
                 this.cameras.main.shake(300, 0.018);
@@ -366,28 +366,40 @@ class PortalWorldScene extends Phaser.Scene {
 
     _warnShip() {
         const fromLeft = Math.random() < 0.5;
-        const shipY    = this.player.y - 10 + (Math.random() - 0.5) * 40;
+        const playerY  = this.player.y;
+        // Ship flies at player level — player must sprint to the far side
+        const shipY    = playerY;
         const sty = {
             fontFamily: '"Press Start 2P", monospace',
-            fontSize: '11px', fill: '#ff4444',
+            fontSize: '10px', fill: '#ff3333',
             stroke: '#000', strokeThickness: 3
         };
-        const arrow = fromLeft ? '>>> SHIP!' : 'SHIP! <<<';
-        const warnX = fromLeft ? 30 : this.W - 30;
-        const warn  = this.add.text(warnX, shipY - 30, arrow, sty)
-            .setOrigin(fromLeft ? 0 : 1, 0.5).setDepth(28);
+        // Tell player which direction to run (opposite side from ship)
+        const runDir  = fromLeft ? 'RIGHT' : 'LEFT';
+        const arrow   = fromLeft ? `>>> RUN ${runDir}!` : `RUN ${runDir}! <<<`;
+        const warnX   = this.W / 2;
+        const warn    = this.add.text(warnX, playerY - 55, arrow, sty)
+            .setOrigin(0.5).setDepth(28);
+
+        // Show a dashed line indicating where the ship will fly
+        const lineGfx = this.add.graphics().setDepth(27);
+        lineGfx.lineStyle(2, 0xff3333, 0.5);
+        for (let x = 0; x < this.W; x += 20) {
+            lineGfx.beginPath(); lineGfx.moveTo(x, shipY - 10); lineGfx.lineTo(x + 12, shipY - 10); lineGfx.strokePath();
+        }
+
         this.tweens.add({
-            targets: warn, alpha: 0, duration: 200,
-            yoyo: true, repeat: 5,
+            targets: warn, alpha: 0, duration: 180,
+            yoyo: true, repeat: 7,
             onComplete: () => {
-                warn.destroy();
+                warn.destroy(); lineGfx.destroy();
                 if (!this.isLeaving) this._spawnShip(fromLeft, shipY);
             }
         });
     }
 
     _spawnShip(fromLeft, shipY) {
-        const spd = 280 + Math.random() * 120;
+        const spd = 260 + Math.random() * 80;
         const x0  = fromLeft ? -120 : this.W + 120;
         const img = this.add.image(x0, shipY, 'spaceship')
             .setScale(0.85).setDepth(10)
