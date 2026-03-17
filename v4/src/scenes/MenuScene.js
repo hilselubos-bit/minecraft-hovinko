@@ -317,7 +317,9 @@ class MenuScene extends Phaser.Scene {
             { key: 'shovel',      label: 'SHOVEL', special: true, unlockKey: 'shovel', unlockScore: 500, badge: '⚡⚡ TURBO!'  }
         ];
         chars.forEach((ch, i) => {
-            const bx = 48 + i * 96, by = 180;
+            const row1 = i < 3;
+            const bx = row1 ? (144 + i * 96) : (192 + (i - 3) * 96);
+            const by = row1 ? 168 : 296;
             const sel = s.char === ch.key;
             const locked = ch.special && !unlocks[ch.unlockKey];
             const bHalf = 40;
@@ -371,13 +373,13 @@ class MenuScene extends Phaser.Scene {
         });
 
         // ── Co padá v portálu — s větší mezerou ───────────────────────────────
-        T(this.add.text(32, 308, 'PORTAL DROPS:', {
+        T(this.add.text(32, 410, 'PORTAL DROPS:', {
             fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#aaa'
         }).setOrigin(0, 0.5).setDepth(D + 1));
 
         [{ key: 'toilet', label: 'TOILET' }, { key: 'toilet_paper', label: 'PAPER' }, { key: 'toilet_brush', label: 'BRUSH' }]
         .forEach((it, i) => {
-            const bx = 102 + i * 138, by = 415;
+            const bx = 102 + i * 138, by = 520;
             const sel = s.portalItem === it.key;
             const box = T(this.add.graphics().setDepth(D + 1));
             box.fillStyle(sel ? 0x1A237E : 0x1a1a1a, 1);
