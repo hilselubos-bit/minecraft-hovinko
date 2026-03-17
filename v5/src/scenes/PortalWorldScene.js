@@ -12,12 +12,12 @@ class PortalWorldScene extends Phaser.Scene {
         this.sharedBoost     = data.boostSec   || 0;
         this.sharedDropSpeed = data.dropSpeed  || 160;
         this.sharedPoopInt   = data.poopInt    || 1.2;
+        this.portalEntry     = data.portalEntry || 1;
     }
 
     create() {
         this.W = this.scale.width;
         this.H = this.scale.height;
-        PortalWorldScene._entry = ((PortalWorldScene._entry || 0) + 1);
 
         this.score     = this.sharedScore;
         this.lives     = this.sharedLives;
@@ -78,7 +78,7 @@ class PortalWorldScene extends Phaser.Scene {
             { key: 'planet_pluto',   label: 'Pluto',   scale: 1.00, y: 0.10 },
         ];
         // Alternate: odd entries start from Mercury (0), even entries start from Jupiter (4)
-        const offset = PortalWorldScene._entry % 2 === 0 ? 4 : 0;
+        const offset = this.portalEntry % 2 === 0 ? 4 : 0;
         const ordered = [...allPlanets.slice(offset), ...allPlanets.slice(0, offset)];
         const defs = ordered.map((p, i) => ({ ...p, spd: SPD, x0: 1.05 + i * 0.60 }));
         const sty = {

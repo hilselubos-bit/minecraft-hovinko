@@ -12,6 +12,7 @@ class GameScene extends Phaser.Scene {
         this.isOver        = false;
         this.goDelay       = 0;
         this.enteringPortal = false;
+        this._portalEntries = 0;
 
         // Poop spawner (čistě v update loopu)
         this.poopInt   = 1.2;   // interval spawn [s]
@@ -486,18 +487,20 @@ class GameScene extends Phaser.Scene {
             targets: this.player, scaleX: 0, scaleY: 0,
             duration: 600, ease: 'Power2',
             onComplete: () => {
+                this._portalEntries++;
                 this.scene.launch('PortalWorldScene', {
-                    score:      this.score,
-                    lives:      this.lives,
-                    charKey:    this.charKey,
-                    itemKey:    this.portalItemKey,
-                    shield:     this.shield,
-                    starSec:    this.starSec,
-                    buttCount:  this.buttCount,
-                    boostSec:   this.boostSec,
-                    level:      this.level,
-                    dropSpeed:  this.dropSpeed,
-                    poopInt:    this.poopInt
+                    score:        this.score,
+                    lives:        this.lives,
+                    charKey:      this.charKey,
+                    itemKey:      this.portalItemKey,
+                    shield:       this.shield,
+                    starSec:      this.starSec,
+                    buttCount:    this.buttCount,
+                    boostSec:     this.boostSec,
+                    level:        this.level,
+                    dropSpeed:    this.dropSpeed,
+                    poopInt:      this.poopInt,
+                    portalEntry:  this._portalEntries
                 });
                 this.scene.pause('GameScene');
             }
