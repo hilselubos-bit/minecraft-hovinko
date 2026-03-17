@@ -21,6 +21,8 @@ class GameScene extends Phaser.Scene {
         // Power-up stav (vše v update loopu — žádné Phaser timery)
         this.puCd          = 6;     // odpočet do prvního power-upu [s]
         this.puInterval    = 13;    // interval mezi spawny [s]
+        this._portalGcdMax = 40;    // garantovaný portál každých X sekund
+        this._portalGcd    = 40;
         this.shield        = false; // štít aktivní
         this.starSec       = 0;     // kolik sekund zbývá 2× bonus
         this.shieldPulse   = 0;
@@ -314,6 +316,21 @@ class GameScene extends Phaser.Scene {
     }
 
     // ═══ SPAWN ════════════════════════════════════════════════════════════════
+    _forcePortal() {
+        const x   = Phaser.Math.Between(55, this.W - 55);
+        const img = this.add.image(x, -55, 'powerup_portal').setScale(0).setDepth(7);
+        img.vy    = 62 + Math.random() * 22;
+        img.type  = 'portal';
+        this.powerups.push(img);
+        this.tweens.add({ targets: img, scale: 1.15, duration: 400, ease: 'Back.Out' });
+        const ann = this.add.text(x, 105, 'PORTAL!', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
+            fill: '#00CFFF', stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(22).setAlpha(0);
+        this.tweens.add({ targets: ann, alpha: 1, duration: 150,
+            yoyo: true, hold: 1600, repeat: 1, onComplete: () => ann.destroy() });
+    }
+
     _spawnPoop() {
         const img = this.add.image(Phaser.Math.Between(40, this.W - 40), -42, this.itemKey)
             .setScale(0).setDepth(7);
@@ -326,7 +343,7 @@ class GameScene extends Phaser.Scene {
 
     _spawnPowerup() {
         const roll = Math.random();
-        const type = roll < 0.20 ? 'shield' : roll < 0.38 ? 'star' : roll < 0.62 ? 'butt' : roll < 0.80 ? 'heart' : 'portal';
+        const type = roll < 0.18 ? 'shield' : roll < 0.34 ? 'star' : roll < 0.56 ? 'butt' : roll < 0.72 ? 'heart' : 'portal';
         const x    = Phaser.Math.Between(55, this.W - 55);
         const img  = this.add.image(x, -55, `powerup_${type}`).setScale(0).setDepth(7);
         img.vy     = 62 + Math.random() * 22;
@@ -399,6 +416,7 @@ class GameScene extends Phaser.Scene {
             this.buttCount++;
             this._showMsg('FART +1!', '#FFAA88', x, y);
         } else {
+            this._portalGcd = this._portalGcdMax; // reset guarantee timer
             this._enterPortal();
         }
         this._hudUpdate();
@@ -593,6 +611,13 @@ class GameScene extends Phaser.Scene {
         // ── Spawn power-upů ──────────────────────────────────────────────────
         this.puCd -= dt;
         if (this.puCd <= 0) { this._spawnPowerup(); this.puCd = this.puInterval; }
+
+        // ── Garantovaný portál (každých 40s) ─────────────────────────────────
+        this._portalGcd -= dt;
+        if (this._portalGcd <= 0) {
+            this._forcePortal();
+            this._portalGcd = this._portalGcdMax;
+        }
 
         // ── Star odpočet ─────────────────────────────────────────────────────
         if (this.starSec > 0) { this.starSec -= dt; if (this.starSec < 0) this.starSec = 0; }
