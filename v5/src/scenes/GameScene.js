@@ -511,8 +511,8 @@ class GameScene extends Phaser.Scene {
 
     _levelUp() {
         this.level++;
-        this.dropSpeed += 28;
-        this.poopInt    = Math.max(0.38, this.poopInt - 0.08);
+        this.dropSpeed += 16;
+        this.poopInt    = Math.max(0.52, this.poopInt - 0.05);
         this._sound('levelup');
 
         const b = this.add.text(this.W / 2, this.H / 2 - 65,

@@ -24,9 +24,16 @@ class PortalWorldScene extends Phaser.Scene {
         this.portalSec = 30;
         this.isLeaving = false;
 
-        this.objects   = [];
-        this.spawnCd   = Math.min(this.sharedPoopInt * 0.80, 1.1);
+        this.objects    = [];
+        this.magnets    = [];
+        // Spawn interval: same as main game but not faster than 0.65s (was 0.42)
+        this.spawnCd    = Math.min(this.sharedPoopInt * 0.80, 1.1);
         this.spawnTimer = 0.5;
+
+        // Magnet power-up
+        this.magnetSec      = 0;
+        this.magnetSpawnCd  = 12 + Math.random() * 8;
+        this._magnetTxt     = null;
 
         // Vanishing point — will oscillate to simulate tunnel turning
         this.vpTime  = 0;
@@ -83,70 +90,57 @@ class PortalWorldScene extends Phaser.Scene {
     }
 
     // ── Draw tunnel every frame ───────────────────────────────────────────────
-    // Vanishing point hovers at top-center and sways gently — "tunnel turning"
     _drawTunnel(vpX, vpY) {
         const g = this.tunnelGfx;
         g.clear();
         const W = this.W, H = this.H;
 
-        // Radial perspective lines (vp → bottom / side edges)
+        // Magnet tint: tunnel turns cyan when magnet active
+        const tunnelCol = this.magnetSec > 0 ? 0x0088cc : 0x3355aa;
+        const ringNear  = this.magnetSec > 0 ? 0x00eeff : 0xcc77ff;
+        const ringMid   = this.magnetSec > 0 ? 0x00aadd : 0x5577ff;
+        const ringFar   = this.magnetSec > 0 ? 0x007799 : 0x3355cc;
+
+        // Radial perspective lines
         const edgePts = [
-            [0,   H],       // bottom-left
-            [W/4, H],
-            [W/2, H],
-            [3*W/4, H],
-            [W,   H],       // bottom-right
-            [0,   H * 0.7],
-            [W,   H * 0.7],
+            [0,   H], [W/4, H], [W/2, H], [3*W/4, H], [W, H],
+            [0,   H * 0.7], [W, H * 0.7],
         ];
         edgePts.forEach(([ex, ey]) => {
-            g.lineStyle(1, 0x3355aa, 0.18);
-            g.beginPath();
-            g.moveTo(vpX, vpY);
-            g.lineTo(ex, ey);
-            g.strokePath();
+            g.lineStyle(1, tunnelCol, 0.18);
+            g.beginPath(); g.moveTo(vpX, vpY); g.lineTo(ex, ey); g.strokePath();
         });
 
-        // Horizontal tunnel rings at increasing depths
+        // Horizontal tunnel rings
         const rings = 9;
         for (let i = 1; i <= rings; i++) {
-            const t     = i / rings;           // 0 = vp (top), 1 = bottom
+            const t     = i / rings;
             const ringY = vpY + t * (H - vpY);
-            // Ring width expands from 0 at vp to full W at bottom
             const hw    = (W / 2) * t;
-            const rx    = vpX + (W / 2 - vpX) * t; // x center of ring at this depth
+            const rx    = vpX + (W / 2 - vpX) * t;
             const near  = t > 0.80;
-            const color = near ? 0xcc77ff : (t > 0.45 ? 0x5577ff : 0x3355cc);
+            const color = near ? ringNear : (t > 0.45 ? ringMid : ringFar);
             g.lineStyle(near ? 3 : 1.2, color, 0.10 + t * 0.52);
             g.beginPath();
-            g.moveTo(rx - hw, ringY);
-            g.lineTo(rx + hw, ringY);
+            g.moveTo(rx - hw, ringY); g.lineTo(rx + hw, ringY);
             g.strokePath();
         }
 
-        // Bright bottom ring (player's plane)
-        g.lineStyle(4, 0xdd88ff, 0.70);
-        g.beginPath();
-        g.moveTo(0, H - 80);
-        g.lineTo(W, H - 80);
-        g.strokePath();
-        // Subtle glow
-        g.lineStyle(14, 0x9944ff, 0.14);
-        g.beginPath();
-        g.moveTo(0, H - 80);
-        g.lineTo(W, H - 80);
-        g.strokePath();
+        // Bright bottom ring
+        g.lineStyle(4, this.magnetSec > 0 ? 0x00eeff : 0xdd88ff, 0.70);
+        g.beginPath(); g.moveTo(0, H - 80); g.lineTo(W, H - 80); g.strokePath();
+        g.lineStyle(14, this.magnetSec > 0 ? 0x0066cc : 0x9944ff, 0.14);
+        g.beginPath(); g.moveTo(0, H - 80); g.lineTo(W, H - 80); g.strokePath();
 
-        // Tunnel center glow at vanishing point
-        g.fillStyle(0x2244cc, 0.22);
+        // Center glow at vanishing point
+        g.fillStyle(this.magnetSec > 0 ? 0x0066cc : 0x2244cc, 0.22);
         g.fillCircle(vpX, vpY, 28);
-        g.fillStyle(0x88bbff, 0.15);
+        g.fillStyle(this.magnetSec > 0 ? 0x00ddff : 0x88bbff, 0.15);
         g.fillCircle(vpX, vpY, 14);
     }
 
-    // ── Spawn object near vanishing point ─────────────────────────────────────
+    // ── Spawn regular object near vanishing point ──────────────────────────────
     _spawnObject(vpX, vpY) {
-        // Target x at the player level (random across tunnel width)
         const targetX = 40 + Math.random() * (this.W - 80);
         const sprite  = this.add.image(vpX, vpY, this.itemKey)
             .setScale(0.10).setAlpha(0.15).setDepth(3);
@@ -154,7 +148,22 @@ class PortalWorldScene extends Phaser.Scene {
             startX: vpX, startY: vpY,
             targetX,
             y: vpY,
-            speed: (this.sharedDropSpeed + 60) * (0.9 + Math.random() * 0.3),
+            // Portal speed = main-game speed + small bonus (was +60, now +10)
+            speed: (this.sharedDropSpeed + 10) * (0.9 + Math.random() * 0.3),
+            sprite
+        });
+    }
+
+    // ── Spawn magnet power-up ──────────────────────────────────────────────────
+    _spawnMagnet(vpX, vpY) {
+        const targetX = 80 + Math.random() * (this.W - 160);
+        const sprite  = this.add.image(vpX, vpY, 'powerup_star')
+            .setScale(0.05).setAlpha(0.2).setDepth(6).setTint(0x00eeff);
+        this.magnets.push({
+            startX: vpX, startY: vpY,
+            targetX,
+            y: vpY,
+            speed: 120,   // slow and easy to spot
             sprite
         });
     }
@@ -169,7 +178,7 @@ class PortalWorldScene extends Phaser.Scene {
         this.timeTxt.setText(Math.max(0, Math.ceil(this.portalSec)) + 's');
         if (this.portalSec <= 0) { this._leave(); return; }
 
-        // Vanishing point sways left/right (tunnel turns)
+        // Vanishing point sways left/right
         this.vpTime += dt;
         const vpX = this.W / 2 + Math.sin(this.vpTime * 0.55) * this.W * 0.18;
         const vpY = this.H * 0.10;
@@ -184,17 +193,41 @@ class PortalWorldScene extends Phaser.Scene {
         this.player.anims.play(vx ? `${this.charKey}_walk` : `${this.charKey}_idle`, true);
         if (vx) this.player.setFlipX(vx < 0);
 
-        // ── Spawn ─────────────────────────────────────────────────────────────
+        // ── Spawn regular objects ──────────────────────────────────────────────
         this.spawnTimer -= dt;
         if (this.spawnTimer <= 0) {
             this._spawnObject(vpX, vpY);
-            this.spawnTimer = Math.max(0.42, this.spawnCd - (30 - this.portalSec) * 0.012);
+            // Spawn gets faster over time but slower ramp than before (0.006 vs 0.012), min 0.65s
+            this.spawnTimer = Math.max(0.65, this.spawnCd - (30 - this.portalSec) * 0.006);
+        }
+
+        // ── Spawn magnet ──────────────────────────────────────────────────────
+        this.magnetSpawnCd -= dt;
+        if (this.magnetSpawnCd <= 0) {
+            this._spawnMagnet(vpX, vpY);
+            this.magnetSpawnCd = 14 + Math.random() * 8;
+        }
+
+        // ── Magnet countdown & pull ───────────────────────────────────────────
+        if (this.magnetSec > 0) {
+            this.magnetSec -= dt;
+            if (this.magnetSec < 0) this.magnetSec = 0;
+            // Pull all object targetX toward player
+            const pull = Math.min(1, dt * 5);
+            this.objects.forEach(o => {
+                o.targetX += (this.player.x - o.targetX) * pull;
+            });
+            // Update HUD label
+            if (this._magnetTxt) {
+                this._magnetTxt.setText(`🧲 ${Math.ceil(this.magnetSec)}s`);
+                if (this.magnetSec <= 0) { this._magnetTxt.destroy(); this._magnetTxt = null; }
+            }
         }
 
         // ── Tunnel visual ─────────────────────────────────────────────────────
         this._drawTunnel(vpX, vpY);
 
-        // ── Objects ───────────────────────────────────────────────────────────
+        // ── Regular objects ───────────────────────────────────────────────────
         const playerY  = this.player.y;
         const catchTop = playerY - 90;
 
@@ -202,7 +235,6 @@ class PortalWorldScene extends Phaser.Scene {
             const o = this.objects[i];
             o.y += o.speed * dt;
 
-            // Perspective: x interpolates from start (near vp) toward targetX
             const tDepth = Math.max(0, (o.y - o.startY) / (playerY - o.startY));
             const x      = o.startX + (o.targetX - o.startX) * tDepth;
             const sc     = 0.10 + tDepth * 1.25;
@@ -212,18 +244,51 @@ class PortalWorldScene extends Phaser.Scene {
             o.sprite.y = o.y;
             o.sprite.setScale(sc).setAlpha(al).setDepth(3 + tDepth * 5);
 
-            // Catch
             if (Math.abs(x - this.player.x) < 55 && o.y > catchTop && o.y < playerY + 10) {
-                this._catch(o, i);
-                continue;
+                this._catch(o, i); continue;
             }
-            // Miss
             if (o.y > this.H + 30) {
-                o.sprite.destroy();
-                this.objects.splice(i, 1);
-                this._miss();
+                o.sprite.destroy(); this.objects.splice(i, 1); this._miss();
             }
         }
+
+        // ── Magnet items ──────────────────────────────────────────────────────
+        for (let i = this.magnets.length - 1; i >= 0; i--) {
+            const m = this.magnets[i];
+            m.y += m.speed * dt;
+            m.sprite.rotation += dt * 2;
+
+            const tDepth = Math.max(0, (m.y - m.startY) / (playerY - m.startY));
+            const x      = m.startX + (m.targetX - m.startX) * tDepth;
+            const sc     = 0.05 + tDepth * 0.65;
+            const al     = 0.2 + tDepth * 0.8;
+
+            m.sprite.x = x;
+            m.sprite.y = m.y;
+            m.sprite.setScale(sc).setAlpha(al).setDepth(6 + tDepth * 5);
+
+            // Catch magnet
+            if (Math.abs(x - this.player.x) < 60 && m.y > catchTop && m.y < playerY + 10) {
+                m.sprite.destroy(); this.magnets.splice(i, 1);
+                this._activateMagnet();
+                continue;
+            }
+            // Falls off screen — no penalty
+            if (m.y > this.H + 30) { m.sprite.destroy(); this.magnets.splice(i, 1); }
+        }
+    }
+
+    _activateMagnet() {
+        this.magnetSec = 7;
+        // Show HUD label
+        if (this._magnetTxt) this._magnetTxt.destroy();
+        this._magnetTxt = this.add.text(this.W / 2, 80, '🧲 7s', {
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '10px', fill: '#00eeff',
+            stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(26);
+        // Shake briefly so player knows they got it
+        this.cameras.main.shake(150, 0.006);
     }
 
     _catch(o, idx) {
@@ -243,8 +308,9 @@ class PortalWorldScene extends Phaser.Scene {
     _leave() {
         if (this.isLeaving) return;
         this.isLeaving = true;
-        this.objects.forEach(o => o.sprite.destroy());
-        this.objects = [];
+        this.objects.forEach(o => o.sprite.destroy()); this.objects = [];
+        this.magnets.forEach(m => m.sprite.destroy()); this.magnets = [];
+        if (this._magnetTxt) { this._magnetTxt.destroy(); this._magnetTxt = null; }
         this.cameras.main.flash(500, 0, 180, 255, false);
         this.time.delayedCall(500, () => {
             this.scene.stop();
