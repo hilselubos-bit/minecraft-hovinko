@@ -383,7 +383,7 @@ class MenuScene extends Phaser.Scene {
             { key: 'toilet_paper', label: 'PAPER'  },
             { key: 'toilet_brush', label: 'BRUSH'  }
         ].forEach((it, i) => {
-            const bx = 63 + i * 90, by = 490;
+            const bx = 105 + i * 90, by = 490;
             const bHalf = 38;
             const sel = s.portalItem === it.key;
             const box = T(this.add.graphics().setDepth(D + 1));
