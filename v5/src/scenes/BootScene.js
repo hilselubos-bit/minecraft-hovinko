@@ -665,6 +665,19 @@ class BootScene extends Phaser.Scene {
         g.font = '52px serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
         g.fillText('💩', 32, 34);
         this.textures.addCanvas('poop', c);
+
+        // Ice/ghost version for portal world
+        const ci = document.createElement('canvas');
+        ci.width = ci.height = 64;
+        const gi = ci.getContext('2d');
+        gi.font = '52px serif'; gi.textAlign = 'center'; gi.textBaseline = 'middle';
+        gi.fillText('💩', 32, 34);
+        // Overlay ice-white colour on top of the emoji pixels
+        gi.globalCompositeOperation = 'source-atop';
+        gi.fillStyle = 'rgba(210, 245, 255, 0.82)';
+        gi.fillRect(0, 0, 64, 64);
+        gi.globalCompositeOperation = 'source-over';
+        this.textures.addCanvas('poop_ice', ci);
     }
 
     _makeToiletChar() {
@@ -1323,6 +1336,19 @@ class BootScene extends Phaser.Scene {
             });
             g.strokeStyle = 'rgba(100,225,225,0.35)'; g.lineWidth = 5;
             g.beginPath(); g.ellipse(cx, cy, 14, 40, 0.25, Math.PI*1.45, Math.PI*2.55); g.stroke();
+        });
+
+        // Pluto — small, icy gray-brown, famous heart (Tombaugh Regio)
+        mk('planet_pluto', 48, 48, g => {
+            ball(g, 24, 24, 19, g => {
+                const gr = g.createRadialGradient(18, 17, 3, 24, 24, 19);
+                gr.addColorStop(0, '#c8b8a8'); gr.addColorStop(1, '#7a6a5a');
+                g.fillStyle = gr; g.fillRect(5, 5, 38, 38);
+                // Tombaugh Regio — bright heart-shaped region
+                g.fillStyle = 'rgba(240,230,210,0.85)';
+                g.beginPath(); g.ellipse(26, 26, 7, 9, 0.3, 0, Math.PI*2); g.fill();
+                g.beginPath(); g.ellipse(21, 24, 5, 7, -0.2, 0, Math.PI*2); g.fill();
+            });
         });
 
         // Neptune — deep blue, white storm

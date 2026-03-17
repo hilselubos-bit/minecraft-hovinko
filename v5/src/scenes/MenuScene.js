@@ -393,9 +393,8 @@ class MenuScene extends Phaser.Scene {
             box.strokeRoundedRect(bx - bHalf, by - 58, bHalf * 2, 104, 8);
             box.setInteractive(new Phaser.Geom.Rectangle(bx - bHalf, by - 58, bHalf * 2, 104), Phaser.Geom.Rectangle.Contains);
             box.on('pointerdown', () => { close(); this._showSettings(W, { ...s, portalItem: it.key }); });
-            const icon = T(this.add.image(bx, by - 8, it.key).setScale(0.62).setDepth(D + 2));
-            // Poop gets the same light tint as in portal world
-            if (it.key === 'poop') icon.setTint(0xddeeff);
+            const iconKey = it.key === 'poop' ? 'poop_ice' : it.key;
+            T(this.add.image(bx, by - 8, iconKey).setScale(0.62).setDepth(D + 2));
             T(this.add.text(bx, by + 38, it.label, {
                 fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
                 fill: sel ? '#7986CB' : '#aaa'

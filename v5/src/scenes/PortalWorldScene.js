@@ -64,15 +64,17 @@ class PortalWorldScene extends Phaser.Scene {
     _buildPlanets() {
         // Full solar system in order, staggered across ~6 screen widths so they arrive one by one
         // y kept in top 28% so they never overlap the tunnel gameplay area
+        // Solar system in order from the Sun — spread across ~8 screen widths
         const defs = [
-            { key: 'planet_mercury', label: 'Mercury', scale: 0.30, spd: 18, y: 0.08, x0: 0.05 },
-            { key: 'planet_venus',   label: 'Venus',   scale: 0.32, spd: 15, y: 0.20, x0: 0.85 },
-            { key: 'planet_earth',   label: 'Earth',   scale: 0.34, spd: 14, y: 0.10, x0: 1.65 },
-            { key: 'planet_mars',    label: 'Mars',    scale: 0.30, spd: 16, y: 0.22, x0: 2.45 },
-            { key: 'planet_jupiter', label: 'Jupiter', scale: 0.40, spd: 11, y: 0.12, x0: 3.25 },
-            { key: 'planet_saturn',  label: 'Saturn',  scale: 0.36, spd:  9, y: 0.24, x0: 4.05 },
-            { key: 'planet_uranus',  label: 'Uranus',  scale: 0.32, spd: 12, y: 0.14, x0: 4.85 },
-            { key: 'planet_neptune', label: 'Neptune', scale: 0.30, spd: 10, y: 0.26, x0: 5.65 },
+            { key: 'planet_mercury', label: 'Mercury', scale: 0.28, spd: 18, y: 0.08, x0: 0.05 },
+            { key: 'planet_venus',   label: 'Venus',   scale: 0.30, spd: 15, y: 0.21, x0: 1.05 },
+            { key: 'planet_earth',   label: 'Earth',   scale: 0.32, spd: 14, y: 0.10, x0: 2.05 },
+            { key: 'planet_mars',    label: 'Mars',    scale: 0.28, spd: 16, y: 0.24, x0: 3.05 },
+            { key: 'planet_jupiter', label: 'Jupiter', scale: 0.38, spd: 11, y: 0.12, x0: 4.05 },
+            { key: 'planet_saturn',  label: 'Saturn',  scale: 0.34, spd:  9, y: 0.26, x0: 5.05 },
+            { key: 'planet_uranus',  label: 'Uranus',  scale: 0.30, spd: 12, y: 0.14, x0: 6.05 },
+            { key: 'planet_neptune', label: 'Neptune', scale: 0.28, spd: 10, y: 0.28, x0: 7.05 },
+            { key: 'planet_pluto',   label: 'Pluto',   scale: 0.26, spd: 13, y: 0.09, x0: 8.05 },
         ];
         const sty = {
             fontFamily: '"Press Start 2P", monospace',
@@ -180,16 +182,15 @@ class PortalWorldScene extends Phaser.Scene {
     // ── Spawn regular object near vanishing point ──────────────────────────────
     _spawnObject(vpX, vpY) {
         const targetX = 40 + Math.random() * (this.W - 80);
-        // Poop gets a pale/ghostly tint so it's visible against dark space
-        const sprite  = this.add.image(vpX, vpY, this.itemKey)
-            .setScale(0.10).setAlpha(0.15).setDepth(3)
-            .setTint(this.itemKey === 'poop' ? 0xddeeff : 0xffffff);
+        const spriteKey = this.itemKey === 'poop' ? 'poop_ice' : this.itemKey;
+        const sprite  = this.add.image(vpX, vpY, spriteKey)
+            .setScale(0.10).setAlpha(0.15).setDepth(3);
         this.objects.push({
             startX: vpX, startY: vpY,
             targetX,
             y: vpY,
-            // Portal speed = main-game speed + small bonus (was +60, now +10)
-            speed: (this.sharedDropSpeed + 10) * (0.9 + Math.random() * 0.3),
+            // Portal speed = 75% of main-game speed, always slightly slower than main scene
+            speed: this.sharedDropSpeed * 0.75 * (0.9 + Math.random() * 0.2),
             sprite
         });
     }

@@ -707,7 +707,13 @@ class GameScene extends Phaser.Scene {
 
     _changeWeather() {
         const all  = ['sunny', 'rain', 'storm', 'rainbow', 'wind'];
-        const next = all.filter(t => t !== this._weatherType)[Math.floor(Math.random() * 4)];
+        // Rainbow only follows rain or storm — never appears from sunny/wind directly
+        const pool = all.filter(t => {
+            if (t === this._weatherType) return false;
+            if (t === 'rainbow' && this._weatherType !== 'rain' && this._weatherType !== 'storm') return false;
+            return true;
+        });
+        const next = pool[Math.floor(Math.random() * pool.length)];
         this._weatherType = next;
 
         // Cloud speed
