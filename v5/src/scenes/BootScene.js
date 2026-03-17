@@ -1185,28 +1185,26 @@ class BootScene extends Phaser.Scene {
     _makeMagnet() {
         const c = document.createElement('canvas'); c.width = c.height = 64;
         const g = c.getContext('2d');
-        const cx = 32, cy = 34;
-        // Outer horseshoe (U-shape)
-        g.strokeStyle = '#00ddff'; g.lineWidth = 10; g.lineCap = 'round';
+        const cx = 32, cy = 36;
+        // Outer horseshoe — red
+        g.strokeStyle = '#ff2222'; g.lineWidth = 12; g.lineCap = 'round';
         g.beginPath(); g.arc(cx, cy, 18, Math.PI, 0); g.stroke();
-        // Inner horseshoe
-        g.strokeStyle = '#0088cc'; g.lineWidth = 4;
+        // Inner highlight
+        g.strokeStyle = '#ff8888'; g.lineWidth = 4;
         g.beginPath(); g.arc(cx, cy, 18, Math.PI, 0); g.stroke();
-        // Left pole (red)
+        // Left pole
+        g.fillStyle = '#cc0000';
+        g.fillRect(cx - 26, cy, 9, 16);
         g.fillStyle = '#ff4444';
-        g.fillRect(cx - 26, cy, 8, 14);
-        g.fillRect(cx - 26, cy + 10, 12, 6);
-        // Right pole (blue)
-        g.fillStyle = '#4444ff';
-        g.fillRect(cx + 18, cy, 8, 14);
-        g.fillRect(cx + 16, cy + 10, 12, 6);
-        // Pole tops (rounded caps matching horseshoe)
-        g.fillStyle = '#00ddff';
-        g.beginPath(); g.arc(cx - 22, cy, 4, 0, Math.PI*2); g.fill();
-        g.beginPath(); g.arc(cx + 22, cy, 4, 0, Math.PI*2); g.fill();
+        g.fillRect(cx - 25, cy, 5, 6);
+        // Right pole
+        g.fillStyle = '#cc0000';
+        g.fillRect(cx + 17, cy, 9, 16);
+        g.fillStyle = '#ff4444';
+        g.fillRect(cx + 18, cy, 5, 6);
         // Sparkle dots
-        [[16,14,'#88eeff'],[48,14,'#88eeff'],[32,10,'#ffffff']].forEach(([x,y,col]) => {
-            g.fillStyle = col; g.beginPath(); g.arc(x, y, 2.5, 0, Math.PI*2); g.fill();
+        [[14, 12, '#ffaaaa'], [50, 12, '#ffaaaa'], [32, 8, '#ffffff']].forEach(([x, y, col]) => {
+            g.fillStyle = col; g.beginPath(); g.arc(x, y, 3, 0, Math.PI*2); g.fill();
         });
         this.textures.addCanvas('powerup_magnet', c);
     }

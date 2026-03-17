@@ -201,7 +201,7 @@ class PortalWorldScene extends Phaser.Scene {
     _spawnMagnet(vpX, vpY) {
         const targetX = 80 + Math.random() * (this.W - 160);
         const sprite  = this.add.image(vpX, vpY, 'powerup_magnet')
-            .setScale(0.05).setAlpha(0.2).setDepth(6);
+            .setScale(0.10).setAlpha(0.15).setDepth(6);
         this.magnets.push({
             startX: vpX, startY: vpY,
             targetX,
@@ -313,7 +313,7 @@ class PortalWorldScene extends Phaser.Scene {
 
             const tDepth = Math.max(0, (m.y - m.startY) / (playerY - m.startY));
             const x      = m.startX + (m.targetX - m.startX) * tDepth;
-            const sc     = 0.05 + tDepth * 0.65;
+            const sc     = 0.10 + tDepth * 1.25;
             const al     = 0.2 + tDepth * 0.8;
 
             m.sprite.x = x;
