@@ -56,8 +56,8 @@ class GameScene extends Phaser.Scene {
         this._buildInput();
         this._audioCtx = null;
         this._fartBuffer = null;
-        this._fartAudioFallback = new Audio('src/apebble-fart-5-228245_edit.mp3');
-        fetch('src/apebble-fart-5-228245_edit.mp3')
+        this._fartAudioFallback = new Audio('/v3/src/apebble-fart-5-228245_edit.mp3');
+        fetch('/v3/src/apebble-fart-5-228245_edit.mp3')
             .then(r => r.arrayBuffer())
             .then(buf => {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
