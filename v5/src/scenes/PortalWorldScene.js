@@ -347,7 +347,6 @@ class PortalWorldScene extends Phaser.Scene {
             // Falls off screen — no penalty
             if (m.y > this.H + 30) { m.sprite.destroy(); this.magnets.splice(i, 1); }
         }
-    }
 
         // ── Spaceships ────────────────────────────────────────────────────────
         for (let i = this.ships.length - 1; i >= 0; i--) {
