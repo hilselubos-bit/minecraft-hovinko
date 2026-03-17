@@ -137,22 +137,16 @@ class PortalWorldScene extends Phaser.Scene {
             const t     = i / 10;
             const color = t > 0.8 ? 0xaa55ff : (t > 0.45 ? 0x4466ff : 0x2244cc);
             g.lineStyle(t > 0.85 ? 2.5 : 1.2, color, 0.08 + t * 0.46);
-            g.beginPath();
-            g.ellipse(cx, cy, rx * t * 2, ry * t * 2);
-            g.strokePath();
+            g.strokeEllipse(cx, cy, rx * t * 2, ry * t * 2);
         }
 
         // Bright outer ring — near edge of tunnel
         g.lineStyle(4, 0xcc77ff, 0.78);
-        g.beginPath();
-        g.ellipse(cx, cy, rx * 2, ry * 2);
-        g.strokePath();
+        g.strokeEllipse(cx, cy, rx * 2, ry * 2);
 
         // Soft outer glow halo
         g.lineStyle(12, 0x8844ff, 0.15);
-        g.beginPath();
-        g.ellipse(cx, cy, rx * 2 + 4, ry * 2 + 4);
-        g.strokePath();
+        g.strokeEllipse(cx, cy, rx * 2 + 4, ry * 2 + 4);
 
         // Center portal core glow
         g.fillStyle(0x1133cc, 0.20);
