@@ -340,14 +340,14 @@ class MenuScene extends Phaser.Scene {
                 // Zámek vpravo nahoře nad sprite
                 T(this.add.text(bx + bHalf - 4, by - 62 + 4, '🔒', { fontSize: '15px' })
                     .setOrigin(1, 0).setDepth(D + 3));
-                // Texty pod sprite
-                T(this.add.text(bx, by + 14, 'LOCKED', {
+                // Texty mimo orámování — pod boxem
+                T(this.add.text(bx, by + 62, 'LOCKED', {
                     fontFamily: '"Press Start 2P", monospace', fontSize: '7px', fill: '#888'
                 }).setOrigin(0.5).setDepth(D + 2));
-                T(this.add.text(bx, by + 28, '250 pts', {
+                T(this.add.text(bx, by + 76, '250 pts', {
                     fontFamily: '"Press Start 2P", monospace', fontSize: '6px', fill: '#666'
                 }).setOrigin(0.5).setDepth(D + 2));
-                T(this.add.text(bx, by + 41, '⚡ faster', {
+                T(this.add.text(bx, by + 89, '⚡ faster', {
                     fontFamily: '"Press Start 2P", monospace', fontSize: '6px', fill: '#554400'
                 }).setOrigin(0.5).setDepth(D + 2));
             } else {
