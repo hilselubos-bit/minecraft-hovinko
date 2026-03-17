@@ -653,6 +653,7 @@ class BootScene extends Phaser.Scene {
         this._makeStars();
         this._makePlanets();
         this._makeMagnet();
+        this._makeSpaceship();
         document.fonts.load('10px "Press Start 2P"').finally(() => {
             this.scene.start('MenuScene');
         });
@@ -1180,6 +1181,68 @@ class BootScene extends Phaser.Scene {
             }
             this.textures.addCanvas(key, c);
         });
+    }
+
+    _makeSpaceship() {
+        const c = document.createElement('canvas'); c.width = 110; c.height = 52;
+        const g = c.getContext('2d');
+
+        // Engine glow (back = left side when flying right)
+        const glow = g.createRadialGradient(12, 26, 2, 12, 26, 18);
+        glow.addColorStop(0, 'rgba(255,140,0,0.9)');
+        glow.addColorStop(0.4, 'rgba(255,60,0,0.5)');
+        glow.addColorStop(1, 'rgba(255,0,0,0)');
+        g.fillStyle = glow; g.fillRect(0, 8, 36, 36);
+
+        // Main hull
+        const hull = g.createLinearGradient(20, 14, 20, 40);
+        hull.addColorStop(0, '#aabbcc'); hull.addColorStop(0.4, '#778899'); hull.addColorStop(1, '#334455');
+        g.fillStyle = hull;
+        g.beginPath();
+        g.moveTo(105, 26);          // nose tip (right)
+        g.quadraticCurveTo(90, 14, 60, 14);
+        g.lineTo(18, 16);
+        g.quadraticCurveTo(8, 20, 8, 26);
+        g.quadraticCurveTo(8, 32, 18, 36);
+        g.lineTo(60, 38);
+        g.quadraticCurveTo(90, 38, 105, 26);
+        g.closePath(); g.fill();
+
+        // Hull edge highlight
+        g.strokeStyle = '#ccdde8'; g.lineWidth = 1.2;
+        g.beginPath();
+        g.moveTo(105, 26); g.quadraticCurveTo(90, 15, 60, 15); g.lineTo(20, 17);
+        g.stroke();
+
+        // Cockpit dome
+        g.fillStyle = '#001a33';
+        g.beginPath(); g.ellipse(72, 22, 16, 10, -0.15, 0, Math.PI*2); g.fill();
+        const domeGrad = g.createRadialGradient(68, 18, 2, 72, 22, 16);
+        domeGrad.addColorStop(0, 'rgba(100,200,255,0.7)');
+        domeGrad.addColorStop(1, 'rgba(0,80,160,0.2)');
+        g.fillStyle = domeGrad;
+        g.beginPath(); g.ellipse(72, 22, 16, 10, -0.15, 0, Math.PI*2); g.fill();
+
+        // Wing fins
+        g.fillStyle = '#556677';
+        // Top fin
+        g.beginPath(); g.moveTo(40,16); g.lineTo(55,4); g.lineTo(70,14); g.closePath(); g.fill();
+        // Bottom fin
+        g.beginPath(); g.moveTo(40,36); g.lineTo(55,48); g.lineTo(70,38); g.closePath(); g.fill();
+
+        // Running lights
+        [[30,26,'#ff4444'],[50,26,'#ffff00'],[88,26,'#44ff88']].forEach(([x,y,col]) => {
+            g.fillStyle = col; g.beginPath(); g.arc(x,y,3,0,Math.PI*2); g.fill();
+            g.fillStyle = 'rgba(255,255,255,0.6)'; g.beginPath(); g.arc(x-1,y-1,1.2,0,Math.PI*2); g.fill();
+        });
+
+        // Engine nozzle
+        g.fillStyle = '#223344';
+        g.beginPath(); g.ellipse(10, 26, 5, 8, 0, 0, Math.PI*2); g.fill();
+        g.fillStyle = '#ff8800';
+        g.beginPath(); g.ellipse(10, 26, 3, 5, 0, 0, Math.PI*2); g.fill();
+
+        this.textures.addCanvas('spaceship', c);
     }
 
     _makeMagnet() {

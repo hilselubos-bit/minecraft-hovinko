@@ -36,6 +36,10 @@ class PortalWorldScene extends Phaser.Scene {
         this.magnetSpawnCd  = 12 + Math.random() * 8;
         this._magnetTxt     = null;
 
+        // Spaceship hazard
+        this.ships          = [];
+        this.shipSpawnCd    = 12 + Math.random() * 10;
+
         // Vanishing point — will oscillate to simulate tunnel turning
         this.vpTime  = 0;
         this.touchDir = 0;
@@ -256,6 +260,13 @@ class PortalWorldScene extends Phaser.Scene {
             this.magnetSpawnCd = 14 + Math.random() * 8;
         }
 
+        // ── Spawn spaceship ───────────────────────────────────────────────────
+        this.shipSpawnCd -= dt;
+        if (this.shipSpawnCd <= 0) {
+            this._warnShip();
+            this.shipSpawnCd = 18 + Math.random() * 12;
+        }
+
         // ── Magnet countdown & pull ───────────────────────────────────────────
         if (this.magnetSec > 0) {
             this.magnetSec -= dt;
@@ -338,6 +349,53 @@ class PortalWorldScene extends Phaser.Scene {
         }
     }
 
+        // ── Spaceships ────────────────────────────────────────────────────────
+        for (let i = this.ships.length - 1; i >= 0; i--) {
+            const s = this.ships[i];
+            s.img.x += s.vx * dt;
+            if (Math.abs(s.img.x - this.player.x) < 62 && Math.abs(s.img.y - this.player.y) < 36) {
+                s.img.destroy(); this.ships.splice(i, 1);
+                this._miss();
+                this.cameras.main.shake(300, 0.018);
+                continue;
+            }
+            if ((s.vx > 0 && s.img.x > this.W + 120) || (s.vx < 0 && s.img.x < -120)) {
+                s.img.destroy(); this.ships.splice(i, 1);
+            }
+        }
+    }
+
+    _warnShip() {
+        const fromLeft = Math.random() < 0.5;
+        const shipY    = this.player.y - 10 + (Math.random() - 0.5) * 40;
+        const sty = {
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '11px', fill: '#ff4444',
+            stroke: '#000', strokeThickness: 3
+        };
+        const arrow = fromLeft ? '>>> SHIP!' : 'SHIP! <<<';
+        const warnX = fromLeft ? 30 : this.W - 30;
+        const warn  = this.add.text(warnX, shipY - 30, arrow, sty)
+            .setOrigin(fromLeft ? 0 : 1, 0.5).setDepth(28);
+        this.tweens.add({
+            targets: warn, alpha: 0, duration: 200,
+            yoyo: true, repeat: 5,
+            onComplete: () => {
+                warn.destroy();
+                if (!this.isLeaving) this._spawnShip(fromLeft, shipY);
+            }
+        });
+    }
+
+    _spawnShip(fromLeft, shipY) {
+        const spd = 280 + Math.random() * 120;
+        const x0  = fromLeft ? -120 : this.W + 120;
+        const img = this.add.image(x0, shipY, 'spaceship')
+            .setScale(0.85).setDepth(10)
+            .setFlipX(!fromLeft);
+        this.ships.push({ img, vx: fromLeft ? spd : -spd });
+    }
+
     _activateMagnet() {
         this.magnetSec = 7;
         // Show HUD label
@@ -373,6 +431,7 @@ class PortalWorldScene extends Phaser.Scene {
         this.isLeaving = true;
         this.objects.forEach(o => o.sprite.destroy()); this.objects = [];
         this.magnets.forEach(m => m.sprite.destroy()); this.magnets = [];
+        this.ships.forEach(s => s.img.destroy()); this.ships = [];
         this._planets.forEach(p => { p.img.destroy(); p.lbl.destroy(); }); this._planets = [];
         if (this._magnetTxt) { this._magnetTxt.destroy(); this._magnetTxt = null; }
         this.cameras.main.flash(500, 0, 180, 255, false);
