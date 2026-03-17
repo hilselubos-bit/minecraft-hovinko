@@ -2,14 +2,17 @@ class PortalWorldScene extends Phaser.Scene {
     constructor() { super('PortalWorldScene'); }
 
     init(data) {
-        this.sharedScore  = data.score      || 0;
-        this.sharedLives  = data.lives      || 3;
-        this.charKey      = data.charKey    || 'steve';
-        this.itemKey      = data.itemKey    || 'poop';
-        this.sharedShield = data.shield     || false;
-        this.sharedStar   = data.starSec    || 0;
-        this.sharedButt   = data.buttCount  || 0;
-        this.sharedBoost  = data.boostSec   || 0;
+        this.sharedScore     = data.score      || 0;
+        this.sharedLives     = data.lives      || 3;
+        this.charKey         = data.charKey    || 'toilet_char';
+        this.itemKey         = data.itemKey    || 'poop';
+        this.sharedShield    = data.shield     || false;
+        this.sharedStar      = data.starSec    || 0;
+        this.sharedButt      = data.buttCount  || 0;
+        this.sharedBoost     = data.boostSec   || 0;
+        // Rychlost a obtížnost přebíráme z GameScene (kontinuita)
+        this.sharedDropSpeed = data.dropSpeed  || 160;
+        this.sharedPoopInt   = data.poopInt    || 1.2;
     }
 
     create() {
@@ -22,15 +25,18 @@ class PortalWorldScene extends Phaser.Scene {
         this.portalSec  = 30;
         this.isLeaving  = false;
         this.poops      = [];
-        this.poopCd     = 1.5;
-        this.poopInt    = 1.2;
-        this.dropSpeed  = 130;
+        // Přebíráme rychlost z GameScene + mírně těžší než hlavní hra
+        this.dropSpeed  = Math.max(this.sharedDropSpeed + 10, 170);
+        this.poopInt    = Math.min(this.sharedPoopInt * 0.80, 1.1);
+        this.poopCd     = this.poopInt;
         this.touchDir   = 0;
         this.boostSec   = this.sharedBoost;
         this._lastTapTime  = 0;
         this._lastKeyTime  = 0;
         this._lastKeyCode  = '';
         this._audioCtx  = null;
+        this.isPaused   = false;
+        this._pauseDiv  = null;
 
         this._buildBg();
         this._buildPlayer();
@@ -68,11 +74,11 @@ class PortalWorldScene extends Phaser.Scene {
         floor.lineBetween(0, this.H - 90, this.W, this.H - 90);
     }
 
-    // ═══ HRÁČ ═════════════════════════════════════════════════════════════════
+    // ═══ HRÁČ (prd v portálu = hovínko) ══════════════════════════════════════
     _buildPlayer() {
-        this.player = this.add.sprite(this.W / 2, this.H - 60, this.charKey)
-            .setScale(1.3).setDepth(10);
-        this.player.anims.play(`${this.charKey}_idle`);
+        // Hráč je nyní hovínko — větší, bez animace
+        this.player = this.add.image(this.W / 2, this.H - 60, 'poop')
+            .setScale(1.7).setDepth(10);
 
         // Štít grafika
         this.shieldGfx = this.add.graphics().setDepth(11);
@@ -81,43 +87,61 @@ class PortalWorldScene extends Phaser.Scene {
 
     // ═══ HUD ══════════════════════════════════════════════════════════════════
     _buildHUD() {
-        const lS = { fontFamily: '"Press Start 2P", monospace', fontSize: '11px', fill: '#00CFFF', stroke: '#000', strokeThickness: 3 };
+        const lS = { fontFamily: '"Press Start 2P", monospace', fontSize: '11px', fill: '#FFD700', stroke: '#000', strokeThickness: 3 };
 
         // Score
-        this.add.text(13, 17, 'SK:', lS).setDepth(20);
+        this.add.text(13, 17, 'SC:', lS).setDepth(20);
         this.scoreTxt = this.add.text(52, 17, `${this.score}`, lS).setDepth(20);
 
         // Životy
         this.hearts = [];
         for (let i = 0; i < 5; i++) {
             this.hearts.push(
-                this.add.text(this.W - 18 - i * 24, 17, '\u2665', { ...lS, fontSize: '11px', fill: '#FF3B3B' }).setDepth(20)
+                this.add.text(this.W - 18 - i * 24, 17, '\u2665', { ...lS, fontSize: '11px', fill: '#FF4466' }).setDepth(20)
             );
         }
 
-        // Odpočet portálu — výrazně uprostřed nahoře
-        this.timerBg = this.add.graphics().setDepth(19);
-        this.timerTxt = this.add.text(this.W / 2, 14, '30s', {
-            ...lS, fontSize: '16px', fill: '#00CFFF'
+        // Odpočet portálu — výrazně uprostřed nahoře + progress bar
+        this.timerBg  = this.add.graphics().setDepth(19);
+        this.timerBar = this.add.graphics().setDepth(19);
+        this.timerTxt = this.add.text(this.W / 2, 10, '30s', {
+            ...lS, fontSize: '18px', fill: '#FFD700'
         }).setOrigin(0.5, 0).setDepth(20);
 
         // Label světa
-        this.add.text(this.W / 2, 45, 'VYHYBEJ SE!', {
-            ...lS, fontSize: '8px', fill: '#5599FF'
+        this.add.text(this.W / 2, 46, 'DODGE!', {
+            ...lS, fontSize: '8px', fill: '#88AAFF'
         }).setOrigin(0.5, 0).setDepth(20);
+
+        // Pause button — vpravo nahoře
+        const pauseBtn = this.add.text(this.W - 12, 38, '⏸', {
+            fontSize: '30px', fill: '#FFD700', stroke: '#000', strokeThickness: 4
+        }).setOrigin(1, 0).setDepth(25).setInteractive();
+        pauseBtn.on('pointerdown', () => this._togglePause());
     }
 
     _hudUpdate() {
         this.scoreTxt.setText(`${this.score}`);
         this.hearts.forEach((h, i) => {
             h.setText(i < this.lives ? '\u2665' : '\u2661');
-            h.setColor(i < this.lives ? '#FF3B3B' : '#444444');
+            h.setColor(i < this.lives ? '#FF4466' : '#444444');
         });
         const secs = Math.ceil(this.portalSec);
-        this.timerTxt.setText(`${secs}s`);
-        // Zbarvení odpočtu — čím méně tím červenější
-        const col = secs <= 10 ? '#FF4444' : secs <= 20 ? '#FFAA00' : '#00CFFF';
-        this.timerTxt.setColor(col);
+        const frac = this.portalSec / 30; // 0..1 remaining
+
+        // Timer text — barva a velikost podle zbývajícího času
+        const col = secs <= 5 ? '#FF3333' : secs <= 10 ? '#FF6600' : secs <= 20 ? '#FFB800' : '#FFD700';
+        const sz  = secs <= 5 ? '22px' : secs <= 10 ? '20px' : '18px';
+        this.timerTxt.setText(`${secs}s`).setFontSize(sz).setColor(col);
+
+        // Progress bar pod časem
+        this.timerBar.clear();
+        const bw = 120, bh = 5, bx = this.W / 2 - bw / 2, by = 38;
+        this.timerBar.fillStyle(0x222244, 0.8);
+        this.timerBar.fillRoundedRect(bx, by, bw, bh, 2);
+        const barCol = secs <= 5 ? 0xFF3333 : secs <= 10 ? 0xFF6600 : secs <= 20 ? 0xFFB800 : 0xFFD700;
+        this.timerBar.fillStyle(barCol, 1);
+        this.timerBar.fillRoundedRect(bx, by, Math.max(4, bw * frac), bh, 2);
     }
 
     // ═══ VSTUP ════════════════════════════════════════════════════════════════
@@ -125,23 +149,93 @@ class PortalWorldScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd    = this.input.keyboard.addKeys('A,D');
 
-        this.input.on('pointerdown', p => {
-            const now = this.time.now;
-            if (now - this._lastTapTime < 300) this.boostSec = 3.5;
-            this._lastTapTime = now;
-            this.touchDir = p.x < this.player.x ? -1 : 1;
-        });
-        this.input.on('pointermove', p => { if (p.isDown) this.touchDir = p.x < this.player.x ? -1 : 1; });
-        this.input.on('pointerup',   () => { this.touchDir = 0; });
+        this._touches = new Map();
+        this.input.addPointer(3);
+
+        const syncDir = () => {
+            if (this._touches.size === 0) { this.touchDir = 0; return; }
+            const lastX = [...this._touches.values()].at(-1);
+            this.touchDir = lastX < this.player.x ? -1 : 1;
+        };
+
+        this.input.on('pointerdown', p => { this._touches.set(p.id, p.x); syncDir(); });
+        this.input.on('pointermove', p => { if (this._touches.has(p.id)) { this._touches.set(p.id, p.x); syncDir(); } });
+        this.input.on('pointerup',   p => { this._touches.delete(p.id); syncDir(); });
+        this.input.on('gameout',     () => { this._touches.clear(); this.touchDir = 0; });
 
         this.input.keyboard.on('keydown', e => {
-            const k = e.code;
-            if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'KeyA' || k === 'KeyD') {
-                const now = this.time.now;
-                if (k === this._lastKeyCode && now - this._lastKeyTime < 300) this.boostSec = 3.5;
-                this._lastKeyCode = k; this._lastKeyTime = now;
-            }
+            if (e.code === 'Escape') this._togglePause();
         });
+    }
+
+    _togglePause() {
+        if (this.isLeaving) return;
+        this.isPaused ? this._resume() : this._pause();
+    }
+
+    _pause() {
+        this.isPaused = true;
+        this.time.timeScale = 0;
+        this.tweens.timeScale = 0;
+        this._touches.clear();
+        this.touchDir = 0;
+
+        const div = document.createElement('div');
+        div.style.cssText = `
+            position:fixed; inset:0; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            background:rgba(0,0,20,0.85); z-index:9999;
+        `;
+        div.innerHTML = `
+            <div style="
+                background:linear-gradient(160deg,#0a0a1e,#050510);
+                border:3px solid #FFD700; border-radius:18px;
+                padding:32px 28px 24px; text-align:center;
+                width:min(300px,82vw); box-sizing:border-box;
+                box-shadow:0 0 40px rgba(255,215,0,0.18),0 8px 32px rgba(0,0,0,0.8);
+            ">
+                <div style="font-size:34px;margin-bottom:8px">⏸</div>
+                <div style="font-family:'Press Start 2P',monospace;font-size:14px;color:#FFD700;margin-bottom:6px;
+                    text-shadow:0 0 12px rgba(255,215,0,0.4)">PAUSED</div>
+                <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#88AAFF;margin-bottom:24px">PORTAL WORLD</div>
+                <button id="portalResume" style="
+                    width:100%;padding:14px 0;margin-bottom:10px;
+                    font-family:'Press Start 2P',monospace;font-size:11px;
+                    background:linear-gradient(180deg,#4CAF50,#2e7d32);
+                    color:#fff;border:2px solid #FFD700;border-radius:10px;
+                    cursor:pointer;letter-spacing:1px;
+                    box-shadow:0 4px 0 #1b5e20,0 0 16px rgba(76,175,80,0.3);
+                ">▶ RESUME</button>
+                <button id="portalMenu" style="
+                    width:100%;padding:12px 0;
+                    font-family:'Press Start 2P',monospace;font-size:10px;
+                    background:transparent;color:#888;
+                    border:2px solid #555;border-radius:10px;cursor:pointer;
+                ">MENU</button>
+            </div>
+        `;
+        document.body.appendChild(div);
+        this._pauseDiv = div;
+
+        document.getElementById('portalResume').addEventListener('click', () => this._resume());
+        document.getElementById('portalMenu').addEventListener('click', () => {
+            this._removePauseDiv();
+            this.scene.start('MenuScene');
+        });
+    }
+
+    _resume() {
+        this.isPaused = false;
+        this.time.timeScale = 1;
+        this.tweens.timeScale = 1;
+        this._removePauseDiv();
+    }
+
+    _removePauseDiv() {
+        if (this._pauseDiv?.parentNode) {
+            this._pauseDiv.parentNode.removeChild(this._pauseDiv);
+            this._pauseDiv = null;
+        }
     }
 
     // ═══ EFEKTY PŘECHODU ══════════════════════════════════════════════════════
@@ -150,13 +244,29 @@ class PortalWorldScene extends Phaser.Scene {
         this.player.setScale(0);
         this.tweens.add({ targets: this.player, scaleX: 1.3, scaleY: 1.3, duration: 500, ease: 'Back.Out' });
 
-        const txt = this.add.text(this.W / 2, this.H / 2, 'JINÝ SVĚT!\nVYHÝBEJ SE!', {
-            fontFamily: '"Press Start 2P", monospace', fontSize: '16px',
-            fill: '#00CFFF', stroke: '#000033', strokeThickness: 4, align: 'center'
+        // Tmavé pozadí za výzvou
+        const ov = this.add.graphics().setDepth(29).setAlpha(0);
+        ov.fillStyle(0x000022, 0.78);
+        ov.fillRoundedRect(this.W / 2 - 168, this.H / 2 - 72, 336, 144, 16);
+        this.tweens.add({ targets: ov, alpha: 1, duration: 280, yoyo: true, hold: 1550, onComplete: () => ov.destroy() });
+
+        const txt = this.add.text(this.W / 2, this.H / 2 - 22, '⚠ WARNING! ⚠', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '15px',
+            fill: '#FFD700', stroke: '#000', strokeThickness: 4, align: 'center'
         }).setOrigin(0.5).setDepth(30).setAlpha(0);
+
+        const txt2 = this.add.text(this.W / 2, this.H / 2 + 24, 'DODGE THE\nFALLING OBJECTS!', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '11px',
+            fill: '#00EEFF', stroke: '#000033', strokeThickness: 3, align: 'center', lineSpacing: 6
+        }).setOrigin(0.5).setDepth(30).setAlpha(0);
+
         this.tweens.chain({ targets: txt, tweens: [
-            { alpha: 1, scale: 1.05, duration: 350, ease: 'Back.Out' },
-            { alpha: 0, y: txt.y - 50, delay: 1300, duration: 450, onComplete: () => txt.destroy() }
+            { alpha: 1, scaleX: 1.08, scaleY: 1.08, duration: 300, ease: 'Back.Out' },
+            { alpha: 0, y: txt.y - 40, delay: 1500, duration: 380, onComplete: () => txt.destroy() }
+        ]});
+        this.tweens.chain({ targets: txt2, tweens: [
+            { alpha: 1, duration: 350, delay: 100 },
+            { alpha: 0, y: txt2.y - 40, delay: 1400, duration: 380, onComplete: () => txt2.destroy() }
         ]});
     }
 
@@ -164,7 +274,7 @@ class PortalWorldScene extends Phaser.Scene {
         this._sound('exit');
         this.cameras.main.flash(600, 0, 180, 255, false);
 
-        const txt = this.add.text(this.W / 2, this.H / 2, 'NÁVRAT!', {
+        const txt = this.add.text(this.W / 2, this.H / 2, 'RETURN!', {
             fontFamily: '"Press Start 2P", monospace', fontSize: '22px',
             fill: '#00CFFF', stroke: '#000033', strokeThickness: 4
         }).setOrigin(0.5).setDepth(30);
@@ -180,11 +290,19 @@ class PortalWorldScene extends Phaser.Scene {
 
     // ═══ SPAWN ════════════════════════════════════════════════════════════════
     _spawnPoop() {
-        const img = this.add.image(Phaser.Math.Between(40, this.W - 40), -42, this.itemKey)
+        this._spawnSingle();
+        // Při skóre > 5: šance na druhý záchod
+        if (this.score > 5 && Math.random() < 0.35) this._spawnSingle();
+        // Při skóre > 12: šance na třetí záchod
+        if (this.score > 12 && Math.random() < 0.20) this._spawnSingle();
+    }
+
+    _spawnSingle() {
+        // Záchody padají shora rovně — žádná rotace, žádný wobble
+        // Spawn pokrývá celou šířku včetně krajů (žádný edge exploit)
+        const img = this.add.image(Phaser.Math.Between(20, this.W - 20), -55, this.itemKey)
             .setScale(0).setDepth(7);
-        img.vy     = this.dropSpeed + Phaser.Math.Between(0, 45);
-        img.vr     = Phaser.Math.FloatBetween(-1.5, 1.5);
-        img.wobble = Math.random() * Math.PI * 2;
+        img.vy     = this.dropSpeed + Phaser.Math.Between(0, 70);
         img.passed = false;
         this.poops.push(img);
         this.tweens.add({ targets: img, scale: 1, duration: 180, ease: 'Back.Out' });
@@ -202,7 +320,8 @@ class PortalWorldScene extends Phaser.Scene {
                 lives:      this.lives,
                 shield:     this.shield,
                 starSec:    this.sharedStar,
-                buttCount:  this.sharedButt
+                buttCount:  this.sharedButt,
+                boostSec:   this.boostSec
             });
             this.scene.stop('PortalWorldScene');
         });
@@ -230,22 +349,19 @@ class PortalWorldScene extends Phaser.Scene {
     // ═══ UPDATE ═══════════════════════════════════════════════════════════════
     update(_, delta) {
         const dt = delta / 1000;
-        if (this.isLeaving) return;
+        if (this.isPaused || this.isLeaving) return;
 
         // Odpočet portálu
         this.portalSec -= dt;
         if (this.portalSec <= 0) { this._leave(); return; }
 
         // Pohyb hráče
-        if (this.boostSec > 0) this.boostSec -= dt;
-        const spd = this.boostSec > 0 ? 560 : 310;
+        const spd = this.charKey === 'soap' ? 650 : 560;
         let vx = 0;
         if (this.cursors.left.isDown  || this.wasd.A.isDown) vx = -spd;
         if (this.cursors.right.isDown || this.wasd.D.isDown) vx =  spd;
         if (!vx && this.touchDir) vx = this.touchDir * spd;
         this.player.x = Phaser.Math.Clamp(this.player.x + vx * dt, 30, this.W - 30);
-        this.player.anims.play(vx ? `${this.charKey}_walk` : `${this.charKey}_idle`, true);
-        if (vx) this.player.setFlipX(vx < 0);
 
         // Scrolling hvězd (iluzivní pohyb nahoru)
         this.stars1.tilePositionY -= 0.55;
@@ -257,7 +373,7 @@ class PortalWorldScene extends Phaser.Scene {
             this.shieldPulse += 3.5 * dt;
             const alpha = 0.4 + Math.sin(this.shieldPulse) * 0.35;
             this.shieldGfx.lineStyle(5, 0x00BFFF, alpha);
-            this.shieldGfx.strokeCircle(this.player.x, this.player.y - 36, 52);
+            this.shieldGfx.strokeCircle(this.player.x, this.player.y, 42);
         }
 
         // Spawn hovínek
@@ -268,16 +384,12 @@ class PortalWorldScene extends Phaser.Scene {
         this._hudUpdate();
 
         // Kolize a vyhnutí
-        const dangerY = this.player.y - 40;
         for (let i = this.poops.length - 1; i >= 0; i--) {
             const p = this.poops[i];
-            p.y      += p.vy * dt;
-            p.rotation += p.vr * dt;
-            p.wobble += 2.0 * dt;
-            p.x      += Math.sin(p.wobble) * 0.5;
+            p.y += p.vy * dt;
 
-            // Zásah hráče
-            if (Math.abs(p.x - this.player.x) < 34 && Math.abs(p.y - dangerY) < 36) {
+            // Zásah hráče (hovínko je centrované)
+            if (Math.abs(p.x - this.player.x) < 32 && Math.abs(p.y - this.player.y) < 34) {
                 p.destroy(); this.poops.splice(i, 1);
                 if (this.shield) {
                     this.shield = false;
@@ -290,7 +402,7 @@ class PortalWorldScene extends Phaser.Scene {
                 this._sound('hit');
 
                 // Zobraz zprávu o zásahu
-                const hit = this.add.text(this.player.x, this.player.y - 50, 'AU!', {
+                const hit = this.add.text(this.player.x, this.player.y - 50, 'OUCH!', {
                     fontFamily: '"Press Start 2P", monospace', fontSize: '16px',
                     fill: '#FF4444', stroke: '#000', strokeThickness: 3
                 }).setOrigin(0.5).setDepth(25);
@@ -307,8 +419,8 @@ class PortalWorldScene extends Phaser.Scene {
                 continue;
             }
 
-            // Hovínko minulo hráče → +1 bod
-            if (!p.passed && p.y > this.player.y + 55) {
+            // Záchod minul hovínko → +1 bod
+            if (!p.passed && p.y > this.player.y + 50) {
                 p.passed = true;
                 this.score++;
                 this._sound('dodge');
@@ -323,4 +435,6 @@ class PortalWorldScene extends Phaser.Scene {
             if (p.y > this.H + 60) { p.destroy(); this.poops.splice(i, 1); }
         }
     }
+
+    shutdown() { this._removePauseDiv(); }
 }

@@ -31,13 +31,19 @@ class GameScene extends Phaser.Scene {
         this._lastKeyTime  = 0;
         this._lastKeyCode  = '';
 
+        this.isPaused  = false;
+        this._pauseDiv = null;
+
         // Nasbírané zadky
         this.buttCount = 0;
 
         // Nastavení postavy a padajícího předmětu
         const cfg = JSON.parse(localStorage.getItem('mc_hovinko_settings') || '{}');
-        this.charKey = cfg.char || 'steve';
-        this.itemKey = cfg.item || 'poop';
+        const validChars      = ['toilet_char', 'bucket', 'broom', 'soap'];
+        const validPortalItems = ['toilet', 'toilet_paper', 'toilet_brush'];
+        this.charKey      = validChars.includes(cfg.char)             ? cfg.char        : 'toilet_char';
+        this.itemKey      = 'poop'; // hlavní hra vždy hovínko
+        this.portalItemKey = validPortalItems.includes(cfg.portalItem) ? cfg.portalItem : 'toilet';
 
         // Objekty
         this.poops    = [];
@@ -49,17 +55,31 @@ class GameScene extends Phaser.Scene {
         this._buildHUD();
         this._buildInput();
         this._audioCtx = null;
-        this._fartAudio = new Audio('src/apebble-fart-5-228245.mp3');
+        this._fartBuffer = null;
+        this._fartAudioFallback = new Audio('src/apebble-fart-5-228245_edit.mp3');
+        fetch('src/apebble-fart-5-228245_edit.mp3')
+            .then(r => r.arrayBuffer())
+            .then(buf => {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this._audioCtx = ctx;
+                return ctx.decodeAudioData(buf);
+            })
+            .then(decoded => { this._fartBuffer = decoded; })
+            .catch(() => {});
 
         // Poslouchej návrat z portálového světa
         this.events.on('resume', (sys, data) => {
             if (data && data.fromPortal) {
-                this.score     = data.score;
-                this.lives     = data.lives;
-                this.buttCount = data.buttCount || 0;
-                this.shield    = data.shield    || false;
-                this.starSec   = data.starSec   || 0;
-                this.isOver    = false;
+                this.score          = data.score;
+                this.lives          = data.lives;
+                this.buttCount      = data.buttCount || 0;
+                this.shield         = data.shield    || false;
+                this.starSec        = data.starSec   || 0;
+                this.boostSec       = data.boostSec  || 0;
+                this.isOver         = false;
+                this.enteringPortal = false;
+                // Obnov hráče (byl zmenšen na 0 při vstupu do portálu)
+                this.player.setScale(1.3).setAlpha(1);
                 // Smažeme hovínka co spadla během portálu
                 this.poops.forEach(p => p.destroy()); this.poops = [];
                 this._hudUpdate();
@@ -131,8 +151,8 @@ class GameScene extends Phaser.Scene {
         const labelStyle = { fontFamily: '"Press Start 2P", monospace', fontSize: '13px', fill: '#FFD700', stroke: '#000', strokeThickness: 3 };
 
         // Score
-        this.add.text(13, 17, 'SK:', labelStyle).setDepth(20);
-        this.scoreTxt = this.add.text(58, 17, '0', labelStyle).setDepth(20);
+        this.add.text(13, 17, 'Score:', labelStyle).setDepth(20);
+        this.scoreTxt = this.add.text(108, 17, '0', labelStyle).setDepth(20);
 
         // Životy — max 5, plain unicode ♥/♡
         this.hearts = [];
@@ -150,10 +170,16 @@ class GameScene extends Phaser.Scene {
         this.puTxt = this.add.text(this.W / 2, 54, '', { ...labelStyle, fontSize: '11px', fill: '#fff' })
             .setOrigin(0.5, 0).setAlpha(0).setDepth(20);
 
+        // Pause button — vpravo nahoře pod srdíčky
+        const pauseBtn = this.add.text(this.W - 12, 38, '⏸', {
+            fontSize: '30px', fill: '#FFD700', stroke: '#000', strokeThickness: 4
+        }).setOrigin(1, 0).setDepth(25).setInteractive();
+        pauseBtn.on('pointerdown', () => this._togglePause());
+
         // Butt inventář — vlevo dole nad zemí, klikatelný
-        this.buttIcon = this.add.image(38, this.H - 148, 'powerup_butt')
+        this.buttIcon = this.add.image(38, this.H / 2, 'powerup_butt')
             .setScale(0.9).setAlpha(0).setDepth(20).setInteractive();
-        this.buttCountTxt = this.add.text(64, this.H - 158, '', { ...labelStyle, fontSize: '14px', fill: '#FFAA88' })
+        this.buttCountTxt = this.add.text(64, this.H / 2 - 10, '', { ...labelStyle, fontSize: '14px', fill: '#FFAA88' })
             .setAlpha(0).setDepth(20);
         this.buttIcon.on('pointerdown', () => this._useFart());
     }
@@ -167,9 +193,9 @@ class GameScene extends Phaser.Scene {
         if (this.level > 1) this.levelTxt.setText(`LVL ${this.level}`);
 
         if (this.shield) {
-            this.puTxt.setText('STIT AKTIVNI').setColor('#00BFFF').setAlpha(1);
+            this.puTxt.setText('SHIELD ACTIVE').setColor('#00BFFF').setAlpha(1);
         } else if (this.starSec > 0) {
-            this.puTxt.setText(`2x BODY (${Math.ceil(this.starSec)}s)`).setColor('#FFD700').setAlpha(1);
+            this.puTxt.setText(`2x POINTS (${Math.ceil(this.starSec)}s)`).setColor('#FFD700').setAlpha(1);
         } else {
             this.puTxt.setAlpha(0);
         }
@@ -185,28 +211,93 @@ class GameScene extends Phaser.Scene {
         this.cursors  = this.input.keyboard.createCursorKeys();
         this.wasd     = this.input.keyboard.addKeys('A,D');
         this.touchDir = 0;
+        this._touches = new Map();
+        this.input.addPointer(3);
 
-        this.input.on('pointerdown', p => {
-            // Double-tap → turbo
-            const now = this.time.now;
-            if (now - this._lastTapTime < 300) this._activateBoost();
-            this._lastTapTime = now;
-            this.touchDir = p.x < this.player.x ? -1 : 1;
-        });
-        this.input.on('pointermove', p => { if (p.isDown) this.touchDir = p.x < this.player.x ? -1 : 1; });
-        this.input.on('pointerup',   () => { this.touchDir = 0; });
+        const syncDir = () => {
+            if (this._touches.size === 0) { this.touchDir = 0; return; }
+            const lastX = [...this._touches.values()].at(-1);
+            this.touchDir = lastX < this.player.x ? -1 : 1;
+        };
 
-        // Double-arrow → turbo (tajné)
+        this.input.on('pointerdown', p => { this._touches.set(p.id, p.x); syncDir(); });
+        this.input.on('pointermove', p => { if (this._touches.has(p.id)) { this._touches.set(p.id, p.x); syncDir(); } });
+        this.input.on('pointerup',   p => { this._touches.delete(p.id); syncDir(); });
+        this.input.on('gameout',     () => { this._touches.clear(); this.touchDir = 0; });
+
         this.input.keyboard.on('keydown', e => {
-            const k = e.code;
-            if (k === 'Space') { this._useFart(); return; }
-            if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'KeyA' || k === 'KeyD') {
-                const now = this.time.now;
-                if (k === this._lastKeyCode && now - this._lastKeyTime < 300) this._activateBoost();
-                this._lastKeyCode = k;
-                this._lastKeyTime = now;
-            }
+            if (e.code === 'Space')  this._useFart();
+            if (e.code === 'Escape') this._togglePause();
         });
+    }
+
+    _togglePause() {
+        if (this.isOver || this.enteringPortal) return;
+        this.isPaused ? this._resume() : this._pause();
+    }
+
+    _pause() {
+        this.isPaused = true;
+        this.time.timeScale = 0;
+        this.tweens.timeScale = 0;
+        this._touches.clear();
+        this.touchDir = 0;
+
+        const div = document.createElement('div');
+        div.style.cssText = `
+            position:fixed; inset:0; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            background:rgba(0,0,0,0.78); z-index:9999;
+        `;
+        div.innerHTML = `
+            <div style="
+                background:linear-gradient(160deg,#1a1a2e,#111118);
+                border:3px solid #FFD700; border-radius:18px;
+                padding:32px 28px 24px; text-align:center;
+                width:min(300px,82vw); box-sizing:border-box;
+                box-shadow:0 0 40px rgba(255,215,0,0.18),0 8px 32px rgba(0,0,0,0.7);
+            ">
+                <div style="font-size:34px;margin-bottom:8px">⏸</div>
+                <div style="font-family:'Press Start 2P',monospace;font-size:14px;color:#FFD700;margin-bottom:24px;
+                    text-shadow:0 0 12px rgba(255,215,0,0.4)">PAUSED</div>
+                <button id="pauseResume" style="
+                    width:100%;padding:14px 0;margin-bottom:10px;
+                    font-family:'Press Start 2P',monospace;font-size:11px;
+                    background:linear-gradient(180deg,#4CAF50,#2e7d32);
+                    color:#fff;border:2px solid #FFD700;border-radius:10px;
+                    cursor:pointer;letter-spacing:1px;
+                    box-shadow:0 4px 0 #1b5e20,0 0 16px rgba(76,175,80,0.3);
+                ">▶ RESUME</button>
+                <button id="pauseMenu" style="
+                    width:100%;padding:12px 0;
+                    font-family:'Press Start 2P',monospace;font-size:10px;
+                    background:transparent;color:#888;
+                    border:2px solid #555;border-radius:10px;cursor:pointer;
+                ">MENU</button>
+            </div>
+        `;
+        document.body.appendChild(div);
+        this._pauseDiv = div;
+
+        document.getElementById('pauseResume').addEventListener('click', () => this._resume());
+        document.getElementById('pauseMenu').addEventListener('click', () => {
+            this._removePauseDiv();
+            this.scene.start('MenuScene');
+        });
+    }
+
+    _resume() {
+        this.isPaused = false;
+        this.time.timeScale = 1;
+        this.tweens.timeScale = 1;
+        this._removePauseDiv();
+    }
+
+    _removePauseDiv() {
+        if (this._pauseDiv?.parentNode) {
+            this._pauseDiv.parentNode.removeChild(this._pauseDiv);
+            this._pauseDiv = null;
+        }
     }
 
     _useFart() {
@@ -234,7 +325,7 @@ class GameScene extends Phaser.Scene {
 
     _spawnPowerup() {
         const roll = Math.random();
-        const type = roll < 0.22 ? 'shield' : roll < 0.44 ? 'star' : roll < 0.62 ? 'butt' : roll < 0.80 ? 'heart' : 'portal';
+        const type = roll < 0.20 ? 'shield' : roll < 0.38 ? 'star' : roll < 0.62 ? 'butt' : roll < 0.80 ? 'heart' : 'portal';
         const x    = Phaser.Math.Between(55, this.W - 55);
         const img  = this.add.image(x, -55, `powerup_${type}`).setScale(0).setDepth(7);
         img.vy     = 62 + Math.random() * 22;
@@ -245,7 +336,7 @@ class GameScene extends Phaser.Scene {
         this.tweens.add({ targets: img, scale: 1.15, duration: 400, ease: 'Back.Out' });
 
         // Blikající upozornění nahoře
-        const labels = { shield: 'STIT PADA!', star: '2x BODY PADA!', butt: 'ZADEK PADA!', heart: '+1 ZIVOT PADA!', portal: 'PORTAL!' };
+        const labels = { shield: 'SHIELD!', star: '2x POINTS!', butt: 'FART INCOMING!', heart: '+1 LIFE!', portal: 'PORTAL!' };
         const colors = { shield: '#00BFFF', star: '#FFD700', butt: '#FFAA88', heart: '#FF3B3B', portal: '#00CFFF' };
         const label = labels[type], color = colors[type];
         const ann = this.add.text(x, 105, label, {
@@ -296,16 +387,16 @@ class GameScene extends Phaser.Scene {
 
         if (type === 'shield') {
             this.shield = true;
-            this._showMsg('STIT!', '#00BFFF', x, y);
+            this._showMsg('SHIELD!', '#00BFFF', x, y);
         } else if (type === 'star') {
             this.starSec = 8;
-            this._showMsg('2x BODY!', '#FFD700', x, y);
+            this._showMsg('2x POINTS!', '#FFD700', x, y);
         } else if (type === 'heart') {
             this.lives = Math.min(this.lives + 1, 5);
-            this._showMsg('+1 ZIVOT!', '#FF3B3B', x, y);
+            this._showMsg('+1 LIFE!', '#FF3B3B', x, y);
         } else if (type === 'butt') {
             this.buttCount++;
-            this._showMsg('ZADEK +1!', '#FFAA88', x, y);
+            this._showMsg('FART +1!', '#FFAA88', x, y);
         } else {
             this._enterPortal();
         }
@@ -319,10 +410,18 @@ class GameScene extends Phaser.Scene {
         // Steve se otočí zády
         this.player.setFlipX(!wasFlipped);
 
-        // MP3 fart zvuk
+        // MP3 fart zvuk — přes AudioContext aby nekonkuroval oscillátor zvukům
         try {
-            this._fartAudio.currentTime = 0;
-            this._fartAudio.play().catch(() => {});
+            if (this._fartBuffer && this._audioCtx) {
+                if (this._audioCtx.state === 'suspended') this._audioCtx.resume();
+                const src = this._audioCtx.createBufferSource();
+                src.buffer = this._fartBuffer;
+                src.connect(this._audioCtx.destination);
+                src.start();
+            } else {
+                this._fartAudioFallback.currentTime = 0;
+                this._fartAudioFallback.play().catch(() => {});
+            }
         } catch(e) {}
 
         this._showMsg('PRRRR!', '#90EE90', px, py - 30);
@@ -360,7 +459,7 @@ class GameScene extends Phaser.Scene {
         if (this.isOver || this.enteringPortal) return;
         this.enteringPortal = true;
 
-        this._showMsg('PORTAL!', '#00CFFF', this.W / 2, this.H / 2 - 60);
+        this._showMsg('PORTAL!', '#00CFFF', this.W / 2, this.H / 2 - 60); // EN already
         this.cameras.main.flash(600, 0, 180, 255, false);
 
         // Tweeny pro efekt — po 700ms přepni scénu
@@ -372,7 +471,7 @@ class GameScene extends Phaser.Scene {
                     score:      this.score,
                     lives:      this.lives,
                     charKey:    this.charKey,
-                    itemKey:    this.itemKey,
+                    itemKey:    this.portalItemKey,
                     shield:     this.shield,
                     starSec:    this.starSec,
                     buttCount:  this.buttCount,
@@ -392,7 +491,7 @@ class GameScene extends Phaser.Scene {
             this.shield = false;
             this.cameras.main.flash(220, 0, 191, 255, false);
             this._sound('shieldBreak');
-            this._showMsg('STIT ZLOMEN!', '#00BFFF', this.W / 2, this.H / 2 - 50);
+            this._showMsg('SHIELD BROKEN!', '#00BFFF', this.W / 2, this.H / 2 - 50);
             this._hudUpdate();
             return;
         }
@@ -416,7 +515,7 @@ class GameScene extends Phaser.Scene {
         this._sound('levelup');
 
         const b = this.add.text(this.W / 2, this.H / 2 - 65,
-            `LEVEL ${this.level}\nRYCHLEJI! 🚀`, {
+            `LEVEL ${this.level}\nFASTER! 🚀`, {
                 fontFamily: '"Press Start 2P", monospace', fontSize: '20px',
                 fill: '#FFD700', stroke: '#E65100', strokeThickness: 4, align: 'center'
             }
@@ -442,6 +541,7 @@ class GameScene extends Phaser.Scene {
         if (!this._audioCtx) {
             try { this._audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return; }
         }
+        if (this._audioCtx.state === 'suspended') this._audioCtx.resume();
         const ctx = this._audioCtx, t = ctx.currentTime;
 
         const osc = (freq, dur, wave = 'square', vol = 0.14, start = 0) => {
@@ -465,8 +565,9 @@ class GameScene extends Phaser.Scene {
     update(_, delta) {
         const dt = delta / 1000;
 
-        // ── Game over odpočet ────────────────────────────────────────────────
-        if (this.enteringPortal) return; // čeká na přechod do portálu
+        // ── Pauza / Game over ────────────────────────────────────────────────
+        if (this.isPaused) return;
+        if (this.enteringPortal) return;
         if (this.isOver) {
             this.goDelay -= dt;
             if (this.goDelay <= 0)
@@ -475,8 +576,7 @@ class GameScene extends Phaser.Scene {
         }
 
         // ── Hráč ────────────────────────────────────────────────────────────
-        if (this.boostSec > 0) this.boostSec -= dt;
-        const spd = this.boostSec > 0 ? 560 : 310;
+        const spd = this.charKey === 'soap' ? 650 : 560;
         let vx = 0;
         if (this.cursors.left.isDown  || this.wasd.A.isDown) vx = -spd;
         if (this.cursors.right.isDown || this.wasd.D.isDown) vx =  spd;
@@ -517,7 +617,8 @@ class GameScene extends Phaser.Scene {
             p.rotation += p.vr * dt;
             p.wobble += 2.0 * dt;
             p.x      += Math.sin(p.wobble) * 0.55;
-            if (Math.abs(p.x - this.player.x) < 34 && Math.abs(p.y - catchY) < 36) {
+            // Velkorysý hitbox — chytání ze strany i shora
+            if (Math.abs(p.x - this.player.x) < 55 && p.y > this.player.y - 95 && p.y < this.player.y + 10) {
                 this._catchPoop(p); continue;
             }
             if (p.y > this.H + 50) { p.destroy(); this.poops.splice(i, 1); this._miss(); }
@@ -528,7 +629,7 @@ class GameScene extends Phaser.Scene {
             const p = this.powerups[i];
             p.y        += p.vy * dt;
             p.rotation += 1.2 * dt;     // pomalá rotace místo tweenu
-            if (Math.abs(p.x - this.player.x) < 38 && Math.abs(p.y - catchY) < 40) {
+            if (Math.abs(p.x - this.player.x) < 55 && p.y > this.player.y - 95 && p.y < this.player.y + 10) {
                 this._catchPowerup(p); continue;
             }
             if (p.y > this.H + 60) { p.destroy(); this.powerups.splice(i, 1); }
@@ -539,4 +640,6 @@ class GameScene extends Phaser.Scene {
         this.cloudsF.forEach(c => { c.x -= c.spd; if (c.x < -150) c.x = this.W + 150; });
         this.cloudsN.forEach(c => { c.x -= c.spd; if (c.x < -150) c.x = this.W + 150; });
     }
+
+    shutdown() { this._removePauseDiv(); }
 }
