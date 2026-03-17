@@ -329,41 +329,51 @@ class MenuScene extends Phaser.Scene {
                 box.setInteractive(new Phaser.Geom.Rectangle(bx - bHalf, by - 62, bHalf * 2, 116), Phaser.Geom.Rectangle.Contains);
                 box.on('pointerdown', () => { close(); this._showSettings(W, { ...s, char: ch.key }); });
             }
-            // Sprite vždy viditelný (i locked) — zamčené mýdlo je zašedlé
-            T(this.add.image(bx, by - 8, ch.key, 0)
+
+            // Sprite posunut výše, texty pod ním
+            T(this.add.image(bx, by - 22, ch.key, 0)
                 .setScale(1.05)
                 .setAlpha(locked ? 0.35 : 1)
                 .setDepth(D + 2));
+
             if (locked) {
-                // Malá ikonka zámku přes obrázek (vpravo nahoře)
-                T(this.add.text(bx + bHalf - 8, by - 62 + 6, '🔒', { fontSize: '16px' })
+                // Zámek vpravo nahoře nad sprite
+                T(this.add.text(bx + bHalf - 4, by - 62 + 4, '🔒', { fontSize: '15px' })
                     .setOrigin(1, 0).setDepth(D + 3));
+                // Texty pod sprite
+                T(this.add.text(bx, by + 14, 'LOCKED', {
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '7px', fill: '#888'
+                }).setOrigin(0.5).setDepth(D + 2));
                 T(this.add.text(bx, by + 28, '250 pts', {
-                    fontFamily: '"Press Start 2P", monospace', fontSize: '7px', fill: '#777'
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '6px', fill: '#666'
+                }).setOrigin(0.5).setDepth(D + 2));
+                T(this.add.text(bx, by + 41, '⚡ faster', {
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '6px', fill: '#554400'
+                }).setOrigin(0.5).setDepth(D + 2));
+            } else {
+                if (ch.special) {
+                    const badge = T(this.add.graphics().setDepth(D + 2));
+                    badge.fillStyle(0xFFAB00, 1);
+                    badge.fillRoundedRect(bx - bHalf + 2, by - 62 + 2, bHalf * 2 - 4, 14, 4);
+                    T(this.add.text(bx, by - 55, '⚡ FASTER!', {
+                        fontFamily: '"Press Start 2P", monospace', fontSize: '5px', fill: '#111'
+                    }).setOrigin(0.5).setDepth(D + 3));
+                }
+                T(this.add.text(bx, by + 38, ch.label, {
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '8px',
+                    fill: sel ? '#CC88FF' : '#aaa'
                 }).setOrigin(0.5).setDepth(D + 2));
             }
-            if (ch.special && !locked) {
-                const badge = T(this.add.graphics().setDepth(D + 2));
-                badge.fillStyle(0xFFAB00, 1);
-                badge.fillRoundedRect(bx - bHalf + 2, by - 62 + 2, bHalf * 2 - 4, 14, 4);
-                T(this.add.text(bx, by - 55, '⚡ FASTER!', {
-                    fontFamily: '"Press Start 2P", monospace', fontSize: '5px', fill: '#111'
-                }).setOrigin(0.5).setDepth(D + 3));
-            }
-            T(this.add.text(bx, by + 46, locked ? 'LOCKED' : ch.label, {
-                fontFamily: '"Press Start 2P", monospace', fontSize: '8px',
-                fill: locked ? '#555' : (sel ? '#CC88FF' : '#aaa')
-            }).setOrigin(0.5).setDepth(D + 2));
         });
 
-        // ── Co padá v portálu ─────────────────────────────────────────────────
-        T(this.add.text(32, 282, 'PORTAL DROPS:', {
+        // ── Co padá v portálu — s větší mezerou ───────────────────────────────
+        T(this.add.text(32, 308, 'PORTAL DROPS:', {
             fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#aaa'
         }).setOrigin(0, 0.5).setDepth(D + 1));
 
         [{ key: 'toilet', label: 'TOILET' }, { key: 'toilet_paper', label: 'PAPER' }, { key: 'toilet_brush', label: 'BRUSH' }]
         .forEach((it, i) => {
-            const bx = 102 + i * 138, by = 390;
+            const bx = 102 + i * 138, by = 415;
             const sel = s.portalItem === it.key;
             const box = T(this.add.graphics().setDepth(D + 1));
             box.fillStyle(sel ? 0x1A237E : 0x1a1a1a, 1);
@@ -372,8 +382,8 @@ class MenuScene extends Phaser.Scene {
             box.strokeRoundedRect(bx - 52, by - 65, 104, 118, 8);
             box.setInteractive(new Phaser.Geom.Rectangle(bx - 52, by - 65, 104, 118), Phaser.Geom.Rectangle.Contains);
             box.on('pointerdown', () => { close(); this._showSettings(W, { ...s, portalItem: it.key }); });
-            T(this.add.image(bx, by - 8, it.key).setScale(0.85).setDepth(D + 2));
-            T(this.add.text(bx, by + 46, it.label, {
+            T(this.add.image(bx, by - 10, it.key).setScale(0.85).setDepth(D + 2));
+            T(this.add.text(bx, by + 44, it.label, {
                 fontFamily: '"Press Start 2P", monospace', fontSize: '8px',
                 fill: sel ? '#7986CB' : '#aaa'
             }).setOrigin(0.5).setDepth(D + 2));
