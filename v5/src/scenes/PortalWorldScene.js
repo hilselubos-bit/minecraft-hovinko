@@ -231,7 +231,6 @@ class PortalWorldScene extends Phaser.Scene {
         this.objects.splice(idx, 1);
         this.score += 5 * (this.sharedStar > 0 ? 2 : 1);
         this.scoreTxt.setText(`Score: ${this.score}`);
-        this.cameras.main.flash(90, 255, 215, 0, false);
     }
 
     _miss() {
