@@ -714,22 +714,22 @@ class GameScene extends Phaser.Scene {
         this._cloudMult = { sunny: 1, rain: 1.8, storm: 3, rainbow: 0.45, wind: 6 }[next] || 1;
 
         // Sky overlay alpha
-        const ovAlpha = { sunny: 0, rain: 0.30, storm: 0.50, rainbow: 0, wind: 0.06 }[next] || 0;
+        const ovAlpha = { sunny: 0, rain: 0.14, storm: 0.26, rainbow: 0, wind: 0.04 }[next] || 0;
         this.tweens.add({ targets: this._skyOverlay, alpha: ovAlpha, duration: 2500, ease: 'Sine.InOut' });
 
         // Sun
-        const sunAlpha = (next === 'rain' || next === 'storm') ? 0 : 1;
+        const sunAlpha = (next === 'rain' || next === 'storm') ? 0.2 : 1;
         this.tweens.add({ targets: this.sun, alpha: sunAlpha, duration: 2000, ease: 'Sine.InOut' });
 
         // Rainbow
-        this.tweens.add({ targets: this._rainbowGfx, alpha: next === 'rainbow' ? 0.6 : 0, duration: 2500, ease: 'Sine.InOut' });
+        this.tweens.add({ targets: this._rainbowGfx, alpha: next === 'rainbow' ? 0.30 : 0, duration: 2500, ease: 'Sine.InOut' });
 
         // Rain alpha (via wState wrapper so tween works reliably)
-        const rainTarget = next === 'rain' ? 0.65 : next === 'storm' ? 1.0 : 0;
+        const rainTarget = next === 'rain' ? 0.30 : next === 'storm' ? 0.45 : 0;
         this.tweens.add({ targets: this._wState, rainAlpha: rainTarget, duration: 2000, ease: 'Sine.InOut' });
 
         // Wind alpha
-        this.tweens.add({ targets: this._wState, windAlpha: next === 'wind' ? 1.0 : 0, duration: 1500, ease: 'Sine.InOut' });
+        this.tweens.add({ targets: this._wState, windAlpha: next === 'wind' ? 0.45 : 0, duration: 1500, ease: 'Sine.InOut' });
 
         // Reset lightning timer when entering storm
         if (next === 'storm') this._ltTimer = 3 + Math.random() * 5;
@@ -756,7 +756,7 @@ class GameScene extends Phaser.Scene {
                 d.y += d.spd * dt;
                 if (d.y > H + 12) { d.y = -12; d.x = Math.random() * W; }
                 if (d.x < -6)     { d.x = W + 6; }
-                this._rainGfx.lineStyle(1, 0xaacce8, 1);
+                this._rainGfx.lineStyle(1, 0xaacce8, 0.6);
                 this._rainGfx.beginPath();
                 this._rainGfx.moveTo(d.x, d.y);
                 this._rainGfx.lineTo(d.x - 5, d.y - 13);
@@ -801,8 +801,8 @@ class GameScene extends Phaser.Scene {
 
         if (this._ltPhase === 1) {
             this._ltTime += dt;
-            if (this._ltTime < 0.07)       { this._ltFlashGfx.setAlpha(0.55); }
-            else if (this._ltTime < 0.12)  { this._ltFlashGfx.setAlpha(0.18); }
+            if (this._ltTime < 0.07)       { this._ltFlashGfx.setAlpha(0.22); }
+            else if (this._ltTime < 0.12)  { this._ltFlashGfx.setAlpha(0.08); }
             else                           { this._ltPhase = 2; this._ltTime = 0; }
         }
 
@@ -811,12 +811,12 @@ class GameScene extends Phaser.Scene {
             if (this._ltTime < 0.28) {
                 const pts = this._ltBoltPts;
                 // Glow
-                this._ltBoltGfx.lineStyle(7, 0x88bbff, 0.28);
+                this._ltBoltGfx.lineStyle(7, 0x88bbff, 0.14);
                 this._ltBoltGfx.beginPath();
                 pts.forEach((p, i) => i === 0 ? this._ltBoltGfx.moveTo(p[0], p[1]) : this._ltBoltGfx.lineTo(p[0], p[1]));
                 this._ltBoltGfx.strokePath();
                 // Core
-                this._ltBoltGfx.lineStyle(2, 0xeef8ff, 0.95);
+                this._ltBoltGfx.lineStyle(2, 0xeef8ff, 0.60);
                 this._ltBoltGfx.beginPath();
                 pts.forEach((p, i) => i === 0 ? this._ltBoltGfx.moveTo(p[0], p[1]) : this._ltBoltGfx.lineTo(p[0], p[1]));
                 this._ltBoltGfx.strokePath();
