@@ -1,154 +1,490 @@
-// ─── Steve sprite sheet (4 walk frames, 52×76 each) ─────────────────────────
-function buildSteveSheet() {
-    const FW = 52, FH = 76, FRAMES = 4;
+
+// ─── Bucket (kbelík) character sheet ─────────────────────────────────────────
+function buildBucketSheet() {
     const c = document.createElement('canvas');
-    c.width = FW * FRAMES; c.height = FH;
+    c.width = 208; c.height = 76;
     const g = c.getContext('2d');
-    [-22, 0, 22, 0].forEach((deg, i) => drawSteveFrame(g, i * FW, deg));
+    [0, 1, 2, 3].forEach(f => drawBucketFrame(g, f * 52, f));
     return c;
 }
 
-function drawSteveFrame(g, ox, legDeg) {
-    const A  = legDeg * Math.PI / 180;
-    const aA = -A * 0.8;
-    const cx = ox + 26, gy = 74;
+function drawBucketFrame(g, ox, fr) {
+    const cx = ox + 26;
+    const tilts = [0, 8, 0, -8];
+    const tilt = tilts[fr] * Math.PI / 180;
 
-    function rot(px, py, w, h, angle, color, startY = 0) {
-        g.save();
-        g.translate(px, py);
-        g.rotate(angle);
-        g.fillStyle = color;
-        g.fillRect(-w / 2, startY, w, h);
-        g.restore();
+    g.save();
+    g.translate(cx, 70); g.rotate(tilt); g.translate(-cx, -70);
+
+    // Wire handle (above rim)
+    g.strokeStyle = '#7799BB'; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(cx, 33, 14, Math.PI, 2 * Math.PI); g.stroke();
+    g.fillStyle = '#5577AA';
+    g.beginPath(); g.arc(cx - 12, 33, 3, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 12, 33, 3, 0, Math.PI * 2); g.fill();
+
+    // Rim (top ellipse)
+    g.fillStyle = '#5BAAD8';
+    g.beginPath(); g.ellipse(cx, 33, 16, 4, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#2A6898';
+    g.beginPath(); g.ellipse(cx, 33, 16, 4, 0, Math.PI, Math.PI * 2); g.fill();
+
+    // Bucket body (trapezoid)
+    g.fillStyle = '#3A88C0';
+    g.beginPath();
+    g.moveTo(cx - 14, 33); g.lineTo(cx + 14, 33);
+    g.lineTo(cx + 19, 68); g.lineTo(cx - 19, 68);
+    g.closePath(); g.fill();
+
+    // Highlight stripe
+    g.fillStyle = 'rgba(255,255,255,0.2)';
+    g.beginPath();
+    g.moveTo(cx - 13, 35); g.lineTo(cx - 7, 35);
+    g.lineTo(cx - 12, 66); g.lineTo(cx - 17, 66);
+    g.closePath(); g.fill();
+
+    // Bottom disc
+    g.fillStyle = '#2A6898';
+    g.beginPath(); g.ellipse(cx, 68, 19, 4, 0, 0, Math.PI * 2); g.fill();
+
+    // === Face ===
+    const faceY = 50;
+    // Cheeks
+    g.fillStyle = 'rgba(255,120,100,0.3)';
+    g.beginPath(); g.arc(cx - 8, faceY + 4, 5, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 8, faceY + 4, 5, 0, Math.PI * 2); g.fill();
+
+    // Eyebrows
+    const eyeY = faceY - 5;
+    g.strokeStyle = '#1A3A5A'; g.lineWidth = 1.5;
+    if (fr === 1 || fr === 3) {
+        g.beginPath(); g.moveTo(cx - 9, eyeY - 5); g.lineTo(cx - 3, eyeY - 7); g.stroke();
+        g.beginPath(); g.moveTo(cx + 3, eyeY - 7); g.lineTo(cx + 9, eyeY - 5); g.stroke();
+    } else if (fr === 2) {
+        g.beginPath(); g.moveTo(cx - 9, eyeY - 6); g.lineTo(cx - 3, eyeY - 8); g.stroke();
+        g.beginPath(); g.moveTo(cx + 3, eyeY - 8); g.lineTo(cx + 9, eyeY - 6); g.stroke();
+    } else {
+        g.beginPath(); g.moveTo(cx - 9, eyeY - 4); g.lineTo(cx - 3, eyeY - 4); g.stroke();
+        g.beginPath(); g.moveTo(cx + 3, eyeY - 4); g.lineTo(cx + 9, eyeY - 4); g.stroke();
     }
 
-    rot(cx - 6, gy - 22, 10, 22,  A, '#3949AB');
-    rot(cx - 6, gy - 22, 13,  6,  A, '#3E2723', 22);
-    rot(cx + 6, gy - 22, 10, 22, -A, '#3949AB');
-    rot(cx + 6, gy - 22, 13,  6, -A, '#3E2723', 22);
-
-    g.fillStyle = '#1565C0'; g.fillRect(cx - 12, gy - 44, 24, 22);
-    g.fillStyle = '#0D47A1'; g.fillRect(cx - 12, gy - 44, 24,  4);
-    g.fillStyle = '#1976D2'; g.fillRect(cx - 10, gy - 42,  7, 16);
-    g.fillStyle = '#0D47A1'; g.fillRect(cx -  1, gy - 40,  2, 17);
-
-    rot(cx - 17, gy - 44, 9, 16,  aA, '#1565C0');
-    rot(cx - 17, gy - 44, 9,  6,  aA, '#C68642', 16);
-    rot(cx + 17, gy - 44, 9, 16, -aA, '#1565C0');
-    rot(cx + 17, gy - 44, 9,  6, -aA, '#C68642', 16);
-
-    g.fillStyle = '#C68642'; g.fillRect(cx - 12, gy - 68, 24, 24);
-    g.fillStyle = '#5D4037';
-    g.fillRect(cx - 12, gy - 68, 24,  7);
-    g.fillRect(cx - 12, gy - 61,  4,  4);
-    g.fillRect(cx +  8, gy - 61,  4,  4);
+    // Eyes
+    const eyeH = fr === 2 ? 3.8 : fr === 0 ? 3.0 : 3.3;
     g.fillStyle = '#fff';
-    g.fillRect(cx - 10, gy - 58, 7, 8); g.fillRect(cx + 3, gy - 58, 7, 8);
-    g.fillStyle = '#42A5F5';
-    g.fillRect(cx -  9, gy - 57, 5, 6); g.fillRect(cx + 4, gy - 57, 5, 6);
-    g.fillStyle = '#000';
-    g.fillRect(cx -  8, gy - 56, 3, 4); g.fillRect(cx + 5, gy - 56, 3, 4);
-    g.fillStyle = '#B5651D'; g.fillRect(cx - 1, gy - 52, 3, 3);
-    g.fillStyle = '#5D4037';
-    g.fillRect(cx - 5, gy - 47, 2, 2); g.fillRect(cx - 3, gy - 45, 7, 2); g.fillRect(cx + 4, gy - 47, 2, 2);
-    g.fillRect(cx - 10, gy - 62, 7, 2); g.fillRect(cx + 3, gy - 62, 7, 2);
-}
-
-// ─── Skeleton sprite sheet ────────────────────────────────────────────────────
-function buildSkeletonSheet() {
-    const FW = 52, FH = 76, FRAMES = 4;
-    const c = document.createElement('canvas');
-    c.width = FW * FRAMES; c.height = FH;
-    const g = c.getContext('2d');
-    [-22, 0, 22, 0].forEach((deg, i) => drawSkeletonFrame(g, i * FW, deg));
-    return c;
-}
-
-function drawSkeletonFrame(g, ox, legDeg) {
-    const A = legDeg * Math.PI / 180;
-    const aA = -A * 0.8;
-    const cx = ox + 26, gy = 74;
-    function rot(px, py, w, h, angle, color, startY = 0) {
-        g.save(); g.translate(px, py); g.rotate(angle);
-        g.fillStyle = color; g.fillRect(-w / 2, startY, w, h);
-        g.restore();
-    }
-    // Legs — tenké bílošedé kosti, tmavé klouby/chodidla
-    rot(cx - 6, gy - 22, 6, 22,  A, '#D8D8D8');
-    rot(cx - 6, gy - 22, 8,  5,  A, '#555', 22);
-    rot(cx + 6, gy - 22, 6, 22, -A, '#D8D8D8');
-    rot(cx + 6, gy - 22, 8,  5, -A, '#555', 22);
-    // Pánev
-    g.fillStyle = '#B8B8B8'; g.fillRect(cx - 10, gy - 25, 20, 4);
-    // Tělo / hrudní koš
-    g.fillStyle = '#C8C8C8'; g.fillRect(cx - 10, gy - 44, 20, 20);
-    g.fillStyle = '#888';
-    [0, 6, 12].forEach(r => {
-        g.fillRect(cx - 9, gy - 42 + r, 7, 2);
-        g.fillRect(cx + 2, gy - 42 + r, 7, 2);
-    });
-    g.fillRect(cx - 1, gy - 43, 2, 19); // páteř
-    // Paže
-    rot(cx - 16, gy - 44, 5, 16,  aA, '#D0D0D0');
-    rot(cx - 16, gy - 44, 7,  4,  aA, '#555', 16);
-    rot(cx + 16, gy - 44, 5, 16, -aA, '#D0D0D0');
-    rot(cx + 16, gy - 44, 7,  4, -aA, '#555', 16);
-    // Hlava — lebka
-    g.fillStyle = '#E0E0E0'; g.fillRect(cx - 10, gy - 68, 20, 22);
-    g.fillStyle = '#000';
-    g.fillRect(cx - 9, gy - 65, 7, 7);  // levé oko (dutina)
-    g.fillRect(cx + 2, gy - 65, 7, 7);  // pravé oko
-    g.fillStyle = '#444'; g.fillRect(cx - 2, gy - 56, 4, 4); // nosní dutina
+    g.beginPath(); g.ellipse(cx - 5, eyeY, 3.5, eyeH, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx + 5, eyeY, 3.5, eyeH, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#1A2A3A';
+    g.beginPath(); g.arc(cx - 4.5, eyeY + 0.5, 1.7, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 5.5, eyeY + 0.5, 1.7, 0, Math.PI * 2); g.fill();
     g.fillStyle = '#fff';
-    [cx - 7, cx - 4, cx - 1, cx + 2].forEach(tx => g.fillRect(tx, gy - 50, 2, 4)); // zuby
-    g.fillStyle = '#BCBCBC'; g.fillRect(cx - 7, gy - 50, 14, 4); // čelist
+    g.beginPath(); g.arc(cx - 3.8, eyeY - 0.5, 0.8, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 6.2, eyeY - 0.5, 0.8, 0, Math.PI * 2); g.fill();
+
+    // Mouth
+    g.strokeStyle = '#1A3A5A'; g.lineWidth = 1.5;
+    const mY = faceY + 9;
+    if (fr === 2) {
+        g.beginPath(); g.arc(cx, mY - 2, 5.5, 0.1 * Math.PI, 0.9 * Math.PI); g.stroke();
+    } else if (fr === 1 || fr === 3) {
+        g.beginPath(); g.arc(cx, mY, 2.8, 0, Math.PI * 2); g.stroke();
+    } else {
+        g.beginPath(); g.arc(cx, mY - 1, 3.5, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+    }
+
+    // Water splash on moving frames
+    if (fr === 1 || fr === 3) {
+        g.fillStyle = 'rgba(120,200,255,0.65)';
+        const sd = fr === 1 ? 1 : -1;
+        g.beginPath(); g.arc(cx + sd * 13, 23, 4.5, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(cx + sd * 19, 28, 2.5, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(cx + sd * 15, 18, 2,   0, Math.PI * 2); g.fill();
+    }
+
+    g.restore();
 }
 
-// ─── Creeper sprite sheet ─────────────────────────────────────────────────────
-function buildCreeperSheet() {
-    const FW = 52, FH = 76, FRAMES = 4;
+// ─── Broom (koště) character sheet ───────────────────────────────────────────
+function buildBroomSheet() {
     const c = document.createElement('canvas');
-    c.width = FW * FRAMES; c.height = FH;
+    c.width = 208; c.height = 76;
     const g = c.getContext('2d');
-    [-18, 0, 18, 0].forEach((deg, i) => drawCreeperFrame(g, i * FW, deg));
+    [0, 1, 2, 3].forEach(f => drawBroomFrame(g, f * 52, f));
     return c;
 }
 
-function drawCreeperFrame(g, ox, legDeg) {
-    const A = legDeg * Math.PI / 180;
-    const cx = ox + 26, gy = 74;
-    function rot(px, py, w, h, angle, color, startY = 0) {
-        g.save(); g.translate(px, py); g.rotate(angle);
-        g.fillStyle = color; g.fillRect(-w / 2, startY, w, h);
-        g.restore();
+function drawBroomFrame(g, ox, fr) {
+    const cx = ox + 26;
+    const tilts = [0, 10, 0, -10];
+    const tilt = tilts[fr] * Math.PI / 180;
+
+    g.save();
+    g.translate(cx, 74); g.rotate(tilt); g.translate(-cx, -74);
+
+    // === Handle stick (back layer) ===
+    g.fillStyle = '#D4A060';
+    g.fillRect(cx - 4, 5, 8, 54);
+    g.fillStyle = '#B07030';
+    g.fillRect(cx - 3, 5, 2, 54);
+    g.fillStyle = '#E8C080';
+    g.fillRect(cx, 5, 2, 54);
+
+    // === Top knob ===
+    g.fillStyle = '#A06030';
+    g.beginPath(); g.arc(cx, 8, 6.5, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#D4A070';
+    g.beginPath(); g.arc(cx - 1.5, 6, 2.5, 0, Math.PI * 2); g.fill();
+
+    // === Face bulge (round section over handle) ===
+    const faceY = 28;
+    g.fillStyle = '#DEB887';
+    g.beginPath(); g.arc(cx, faceY, 12, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#B07840'; g.lineWidth = 1;
+    g.beginPath(); g.arc(cx, faceY, 12, 0, Math.PI * 2); g.stroke();
+
+    // Cheeks
+    g.fillStyle = 'rgba(255,110,100,0.32)';
+    g.beginPath(); g.arc(cx - 7, faceY + 5, 4.5, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 7, faceY + 5, 4.5, 0, Math.PI * 2); g.fill();
+
+    // Eyebrows
+    const eyeYb = faceY - 3;
+    g.strokeStyle = '#4A3010'; g.lineWidth = 1.5;
+    if (fr === 1 || fr === 3) {
+        g.beginPath(); g.moveTo(cx - 8, eyeYb - 5); g.lineTo(cx - 2, eyeYb - 7); g.stroke();
+        g.beginPath(); g.moveTo(cx + 2, eyeYb - 7); g.lineTo(cx + 8, eyeYb - 5); g.stroke();
+    } else if (fr === 2) {
+        g.beginPath(); g.moveTo(cx - 8, eyeYb - 6); g.lineTo(cx - 2, eyeYb - 8); g.stroke();
+        g.beginPath(); g.moveTo(cx + 2, eyeYb - 8); g.lineTo(cx + 8, eyeYb - 6); g.stroke();
+    } else {
+        g.beginPath(); g.moveTo(cx - 8, eyeYb - 4); g.lineTo(cx - 2, eyeYb - 4); g.stroke();
+        g.beginPath(); g.moveTo(cx + 2, eyeYb - 4); g.lineTo(cx + 8, eyeYb - 4); g.stroke();
     }
-    // Nohy
-    rot(cx - 6, gy - 22, 10, 22,  A, '#2E7D32');
-    rot(cx - 6, gy - 22, 11,  5,  A, '#1B5E20', 22);
-    rot(cx + 6, gy - 22, 10, 22, -A, '#2E7D32');
-    rot(cx + 6, gy - 22, 11,  5, -A, '#1B5E20', 22);
-    // Tělo
-    g.fillStyle = '#388E3C'; g.fillRect(cx - 12, gy - 44, 24, 22);
-    g.fillStyle = '#2E7D32'; g.fillRect(cx - 12, gy - 44, 24,  3);
-    g.fillStyle = '#43A047'; g.fillRect(cx - 10, gy - 42,  8, 16);
-    // Boční nožičky
-    g.fillStyle = '#2E7D32';
-    g.fillRect(cx - 16, gy - 40, 4, 14);
-    g.fillRect(cx + 12, gy - 40, 4, 14);
-    // Hlava
-    g.fillStyle = '#4CAF50'; g.fillRect(cx - 12, gy - 70, 24, 24);
-    g.fillStyle = '#388E3C'; g.fillRect(cx - 12, gy - 70, 24,  3);
-    g.fillStyle = '#66BB6A'; g.fillRect(cx - 10, gy - 68,  9, 10);
+
+    // Eyes
+    const eyeHb = fr === 2 ? 3.8 : fr === 0 ? 3.0 : 3.3;
+    g.fillStyle = '#fff';
+    g.beginPath(); g.ellipse(cx - 5, eyeYb, 3.5, eyeHb, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx + 5, eyeYb, 3.5, eyeHb, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#1A0A00';
+    g.beginPath(); g.arc(cx - 4.5, eyeYb + 0.5, 1.7, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 5.5, eyeYb + 0.5, 1.7, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath(); g.arc(cx - 3.8, eyeYb - 0.5, 0.8, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 6.2, eyeYb - 0.5, 0.8, 0, Math.PI * 2); g.fill();
+
+    // Mouth
+    g.strokeStyle = '#4A3010'; g.lineWidth = 1.5;
+    const mYb = faceY + 8;
+    if (fr === 2) {
+        g.beginPath(); g.arc(cx, mYb - 1, 5, 0.1 * Math.PI, 0.9 * Math.PI); g.stroke();
+    } else if (fr === 1 || fr === 3) {
+        g.beginPath(); g.arc(cx, mYb, 2.5, 0, Math.PI * 2); g.stroke();
+    } else {
+        g.beginPath(); g.arc(cx, mYb - 1, 3.5, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+    }
+
+    // === Binding collar ===
+    g.fillStyle = '#5A3A15';
+    g.fillRect(cx - 7, 54, 14, 5);
+    g.fillStyle = '#8B5E2A';
+    g.fillRect(cx - 6, 55, 12, 2);
+
+    // === Bristle base ellipse ===
+    g.fillStyle = '#D4B050';
+    g.beginPath(); g.ellipse(cx, 64, 18, 7, 0, 0, Math.PI * 2); g.fill();
+
+    // === Bristle strands ===
+    const spread = fr === 1 ? 7 : fr === 3 ? -7 : 0;
+    g.strokeStyle = '#A07A18'; g.lineWidth = 1.8;
+    for (let i = -5; i <= 5; i++) {
+        g.beginPath();
+        g.moveTo(cx + i * 3, 62);
+        g.lineTo(cx + i * 3.5 + spread * 0.45, 74);
+        g.stroke();
+    }
+    g.strokeStyle = '#7A5A10'; g.lineWidth = 1;
+    for (const iv of [-7, 7]) {
+        g.beginPath();
+        g.moveTo(cx + iv * 2, 64);
+        g.lineTo(cx + iv * 2.5 + spread * 0.7, 73);
+        g.stroke();
+    }
+
+    g.restore();
+}
+
+// ─── Toilet character sheet — boční profil, animace zdvihání prkýnka ─────────
+function buildToiletCharSheet() {
+    const c = document.createElement('canvas');
+    c.width = 208; c.height = 76;
+    const g = c.getContext('2d');
+    [0, 1, 2, 3].forEach(f => drawToiletCharFrame(g, f * 52, f));
+    return c;
+}
+
+function drawToiletCharFrame(g, ox, fr) {
+    // Úhly prkýnka: zavřeno → napůl → otevřeno → napůl
+    const lidAngle = [0, -52, -100, -52][fr] * Math.PI / 180;
+    // Závěs prkýnka — kde mísa navazuje na nádrž
+    const hx = ox + 13, hy = 37;
+
+    // ── Základna ──────────────────────────────────────────────────────────────
+    g.fillStyle = '#DCDCDC';
+    g.fillRect(ox + 3, 67, 46, 9);
+    g.strokeStyle = '#BBBBBB'; g.lineWidth = 1.5; g.strokeRect(ox + 3, 67, 46, 9);
+
+    // ── Mísa — boční D-profil ──────────────────────────────────────────────────
+    g.fillStyle = '#F5F5F5';
+    g.beginPath();
+    g.moveTo(ox + 10, 38);
+    g.lineTo(ox + 10, 67);
+    g.lineTo(ox + 45, 67);
+    g.quadraticCurveTo(ox + 52, 53, ox + 46, 38);
+    g.closePath(); g.fill();
+    g.strokeStyle = '#C4C4C4'; g.lineWidth = 1.5; g.stroke();
+
+    // Spodní stín mísy
+    g.fillStyle = 'rgba(0,0,0,0.05)';
+    g.beginPath();
+    g.moveTo(ox + 10, 57); g.lineTo(ox + 10, 67); g.lineTo(ox + 32, 67);
+    g.closePath(); g.fill();
+
+    // Voda v míse
+    g.fillStyle = 'rgba(100, 195, 245, 0.45)';
+    g.beginPath();
+    g.moveTo(ox + 13, 55); g.lineTo(ox + 43, 55);
+    g.quadraticCurveTo(ox + 47, 64, ox + 43, 66);
+    g.lineTo(ox + 13, 66); g.closePath(); g.fill();
+
+    // Vlnka vody (na liché snímky)
+    if (fr === 1 || fr === 3) {
+        g.strokeStyle = 'rgba(70, 160, 230, 0.45)'; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(ox + 18, 60); g.quadraticCurveTo(ox + 28, 57, ox + 38, 60); g.stroke();
+    }
+
+    // ── Nádrž — boční pohled (vzadu, užší) ────────────────────────────────────
+    g.fillStyle = '#EFEFEF';
+    g.fillRect(ox + 2, 9, 20, 30);
+    g.strokeStyle = '#C4C4C4'; g.lineWidth = 1.5; g.strokeRect(ox + 2, 9, 20, 30);
+    g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(ox + 4, 12, 9, 5); // highlight
+
+    // Tlačítko splachování nahoře
+    g.fillStyle = '#BBBBBB'; g.fillRect(ox + 5, 5, 14, 6);
+    g.fillStyle = '#D0D0D0'; g.fillRect(ox + 7, 7, 9, 2);
+
+    // ── Obličej na nádrži ─────────────────────────────────────────────────────
+    // Výraz závisí na snímku: 0=klid, 1=překvapení, 2=nadšení, 3=překvapení
+    const eyeY   = 20;
+    const mouthY = 30;
+
+    // Tváře (červené)
+    g.fillStyle = 'rgba(255, 100, 100, 0.25)';
+    g.beginPath(); g.arc(ox + 6,  eyeY + 6, 4, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(ox + 16, eyeY + 6, 4, 0, Math.PI * 2); g.fill();
+
+    // Obočí
+    g.strokeStyle = '#555555'; g.lineWidth = 1.5;
+    if (fr === 1 || fr === 3) {
+        // Překvapené — zvednuté obočí
+        g.beginPath(); g.moveTo(ox + 4,  eyeY - 5); g.lineTo(ox + 9,  eyeY - 7); g.stroke();
+        g.beginPath(); g.moveTo(ox + 13, eyeY - 7); g.lineTo(ox + 18, eyeY - 5); g.stroke();
+    } else if (fr === 2) {
+        // Nadšené — obočí nahoru a dovnitř
+        g.beginPath(); g.moveTo(ox + 4,  eyeY - 6); g.lineTo(ox + 9,  eyeY - 8); g.stroke();
+        g.beginPath(); g.moveTo(ox + 13, eyeY - 8); g.lineTo(ox + 18, eyeY - 6); g.stroke();
+    } else {
+        // Klidné rovné obočí
+        g.beginPath(); g.moveTo(ox + 4,  eyeY - 4); g.lineTo(ox + 9,  eyeY - 4); g.stroke();
+        g.beginPath(); g.moveTo(ox + 13, eyeY - 4); g.lineTo(ox + 18, eyeY - 4); g.stroke();
+    }
+
     // Oči
-    g.fillStyle = '#111';
-    g.fillRect(cx - 9, gy - 65, 6, 7);
-    g.fillRect(cx + 3, gy - 65, 6, 7);
-    // Creeper ústa (ikonický vzor)
-    g.fillRect(cx - 5, gy - 56, 3, 3);
-    g.fillRect(cx + 2, gy - 56, 3, 3);
-    g.fillRect(cx - 5, gy - 53, 10, 3);
-    g.fillRect(cx - 5, gy - 50, 4, 3);
-    g.fillRect(cx + 1, gy - 50, 4, 3);
+    const eyeOpenY = fr === 2 ? 3.5 : fr === 0 ? 2.8 : 3.2; // výška oka
+    g.fillStyle = '#ffffff';
+    g.beginPath(); g.ellipse(ox + 7,  eyeY, 3.2, eyeOpenY, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(ox + 15, eyeY, 3.2, eyeOpenY, 0, 0, Math.PI * 2); g.fill();
+    // Zorničky
+    g.fillStyle = '#222222';
+    g.beginPath(); g.arc(ox + 7.5,  eyeY + 0.5, 1.5, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(ox + 15.5, eyeY + 0.5, 1.5, 0, Math.PI * 2); g.fill();
+    // Odlesk v oku
+    g.fillStyle = '#ffffff';
+    g.beginPath(); g.arc(ox + 8,  eyeY - 0.5, 0.8, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(ox + 16, eyeY - 0.5, 0.8, 0, Math.PI * 2); g.fill();
+
+    // Pusa
+    g.strokeStyle = '#555555'; g.lineWidth = 1.5;
+    if (fr === 2) {
+        // Nadšený velký úsměv
+        g.beginPath();
+        g.arc(ox + 11, mouthY - 2, 5, 0.1 * Math.PI, 0.9 * Math.PI);
+        g.stroke();
+    } else if (fr === 1 || fr === 3) {
+        // Překvapené "O"
+        g.beginPath(); g.arc(ox + 11, mouthY, 2.5, 0, Math.PI * 2); g.stroke();
+    } else {
+        // Klidný lehký úsměv
+        g.beginPath();
+        g.arc(ox + 11, mouthY - 1, 3.5, 0.15 * Math.PI, 0.85 * Math.PI);
+        g.stroke();
+    }
+
+    // ── Prkýnko (sedátko) — otáčí se kolem závěsu ─────────────────────────────
+    g.save();
+    g.translate(hx, hy);
+    g.rotate(lidAngle);
+
+    g.fillStyle = '#E6E6E6';
+    g.beginPath();
+    g.moveTo(0, -5);
+    g.lineTo(34, -5);
+    g.quadraticCurveTo(38, 0, 34, 6);
+    g.lineTo(0, 6);
+    g.closePath(); g.fill();
+    g.strokeStyle = '#C0C0C0'; g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.55)'; g.fillRect(2, -4, 22, 2); // highlight
+
+    g.restore();
+
+    // Závěs (kolíček)
+    g.fillStyle = '#AAAAAA';
+    g.beginPath(); g.arc(hx, hy, 3, 0, Math.PI * 2); g.fill();
+}
+
+// ─── Soap dispenser (tekuté mýdlo) character sheet ───────────────────────────
+function buildSoapSheet() {
+    const c = document.createElement('canvas');
+    c.width = 208; c.height = 76;
+    const g = c.getContext('2d');
+    [0, 1, 2, 3].forEach(f => drawSoapFrame(g, f * 52, f));
+    return c;
+}
+
+function drawSoapFrame(g, ox, fr) {
+    const cx = ox + 26;
+    const tilts = [0, 8, 0, -8];
+    const tilt = tilts[fr] * Math.PI / 180;
+
+    g.save();
+    g.translate(cx, 76); g.rotate(tilt); g.translate(-cx, -76);
+
+    // === Bottle body ===
+    const bW = 13; // half-width
+    g.fillStyle = '#4FC3F7';
+    g.beginPath();
+    g.moveTo(cx - bW + 3, 28);
+    g.lineTo(cx + bW - 3, 28);
+    g.quadraticCurveTo(cx + bW, 28, cx + bW, 34);
+    g.lineTo(cx + bW, 64);
+    g.quadraticCurveTo(cx + bW, 70, cx + bW - 3, 70);
+    g.lineTo(cx - bW + 3, 70);
+    g.quadraticCurveTo(cx - bW, 70, cx - bW, 64);
+    g.lineTo(cx - bW, 34);
+    g.quadraticCurveTo(cx - bW, 28, cx - bW + 3, 28);
+    g.closePath(); g.fill();
+
+    // Bottle highlight
+    g.fillStyle = 'rgba(255,255,255,0.28)';
+    g.beginPath(); g.ellipse(cx - 4, 43, 4, 15, 0, 0, Math.PI * 2); g.fill();
+
+    // Bottle outline
+    g.strokeStyle = '#0288D1'; g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(cx - bW + 3, 28);
+    g.lineTo(cx + bW - 3, 28);
+    g.quadraticCurveTo(cx + bW, 28, cx + bW, 34);
+    g.lineTo(cx + bW, 64);
+    g.quadraticCurveTo(cx + bW, 70, cx + bW - 3, 70);
+    g.lineTo(cx - bW + 3, 70);
+    g.quadraticCurveTo(cx - bW, 70, cx - bW, 64);
+    g.lineTo(cx - bW, 34);
+    g.quadraticCurveTo(cx - bW, 28, cx - bW + 3, 28);
+    g.closePath(); g.stroke();
+
+    // White label on bottle (face lives here)
+    g.fillStyle = 'rgba(255,255,255,0.88)';
+    g.fillRect(cx - 9, 32, 18, 36);
+
+    // === Pump collar (sits on top of bottle) ===
+    g.fillStyle = '#78909C';
+    g.beginPath(); g.ellipse(cx, 28, 10, 4, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#546E7A'; g.lineWidth = 1;
+    g.beginPath(); g.ellipse(cx, 28, 10, 4, 0, 0, Math.PI * 2); g.stroke();
+
+    // === Pump stick (pressed down on moving frames) ===
+    const pumpOff = (fr === 1 || fr === 3) ? 3 : 0;
+    g.fillStyle = '#90A4AE';
+    g.fillRect(cx - 2, 10 + pumpOff, 4, 18 - pumpOff);
+
+    // === Pump head ===
+    g.fillStyle = '#78909C';
+    g.beginPath(); g.ellipse(cx, 10 + pumpOff, 8, 3.5, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#546E7A'; g.lineWidth = 1;
+    g.beginPath(); g.ellipse(cx, 10 + pumpOff, 8, 3.5, 0, 0, Math.PI * 2); g.stroke();
+
+    // === Nozzle (points right) ===
+    g.fillStyle = '#607D8B';
+    g.fillRect(cx, 7 + pumpOff, 12, 4);
+    g.beginPath(); g.arc(cx + 12, 9 + pumpOff, 2, 0, Math.PI * 2); g.fill();
+
+    // Soap bubble drip on moving frames
+    if (fr === 1 || fr === 3) {
+        g.fillStyle = 'rgba(178,235,242,0.85)';
+        g.beginPath(); g.arc(cx + 15, 14 + pumpOff, 3.5, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(cx + 19, 19 + pumpOff, 2,   0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(cx + 12, 19 + pumpOff, 2.5, 0, Math.PI * 2); g.fill();
+    }
+
+    // === Base ellipse ===
+    g.fillStyle = '#0288D1';
+    g.beginPath(); g.ellipse(cx, 70, bW, 4, 0, 0, Math.PI * 2); g.fill();
+
+    // === Face (on white label) ===
+    const faceY = 49;
+
+    // Cheeks
+    g.fillStyle = 'rgba(255,120,100,0.3)';
+    g.beginPath(); g.arc(cx - 7, faceY + 5, 4.5, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 7, faceY + 5, 4.5, 0, Math.PI * 2); g.fill();
+
+    // Eyebrows
+    const eyeY = faceY - 5;
+    g.strokeStyle = '#1A3A5A'; g.lineWidth = 1.5;
+    if (fr === 1 || fr === 3) {
+        g.beginPath(); g.moveTo(cx - 8, eyeY - 5); g.lineTo(cx - 2, eyeY - 7); g.stroke();
+        g.beginPath(); g.moveTo(cx + 2, eyeY - 7); g.lineTo(cx + 8, eyeY - 5); g.stroke();
+    } else if (fr === 2) {
+        g.beginPath(); g.moveTo(cx - 8, eyeY - 6); g.lineTo(cx - 2, eyeY - 8); g.stroke();
+        g.beginPath(); g.moveTo(cx + 2, eyeY - 8); g.lineTo(cx + 8, eyeY - 6); g.stroke();
+    } else {
+        g.beginPath(); g.moveTo(cx - 8, eyeY - 4); g.lineTo(cx - 2, eyeY - 4); g.stroke();
+        g.beginPath(); g.moveTo(cx + 2, eyeY - 4); g.lineTo(cx + 8, eyeY - 4); g.stroke();
+    }
+
+    // Eyes
+    const eyeH = fr === 2 ? 3.8 : fr === 0 ? 3.0 : 3.3;
+    g.fillStyle = '#fff';
+    g.beginPath(); g.ellipse(cx - 5, eyeY, 3.5, eyeH, 0, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx + 5, eyeY, 3.5, eyeH, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#1A2A3A';
+    g.beginPath(); g.arc(cx - 4.5, eyeY + 0.5, 1.7, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 5.5, eyeY + 0.5, 1.7, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff';
+    g.beginPath(); g.arc(cx - 3.8, eyeY - 0.5, 0.8, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(cx + 6.2, eyeY - 0.5, 0.8, 0, Math.PI * 2); g.fill();
+
+    // Mouth
+    g.strokeStyle = '#1A3A5A'; g.lineWidth = 1.5;
+    const mY = faceY + 9;
+    if (fr === 2) {
+        g.beginPath(); g.arc(cx, mY - 2, 5, 0.1 * Math.PI, 0.9 * Math.PI); g.stroke();
+    } else if (fr === 1 || fr === 3) {
+        g.beginPath(); g.arc(cx, mY, 2.8, 0, Math.PI * 2); g.stroke();
+    } else {
+        g.beginPath(); g.arc(cx, mY - 1, 3.5, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+    }
+
+    g.restore();
 }
 
 // ─── BootScene ───────────────────────────────────────────────────────────────
@@ -157,9 +493,11 @@ class BootScene extends Phaser.Scene {
 
     create() {
         this._makePoop();
-        this._makeSteve();
-        this._makeSkeleton();
-        this._makeCreeper();
+        this._makeToiletChar();
+
+        this._makeBucket();
+        this._makeBroom();
+        this._makeSoap();
         this._makeToilet();
         this._makeToiletPaper();
         this._makeGround();
@@ -173,8 +511,11 @@ class BootScene extends Phaser.Scene {
         this._makeHeart();
         this._makeHeartPowerup();
         this._makePortal();
+        this._makeToiletBrush();
         this._makeStars();
-        this.scene.start('MenuScene');
+        document.fonts.load('10px "Press Start 2P"').finally(() => {
+            this.scene.start('MenuScene');
+        });
     }
 
     _makePoop() {
@@ -186,27 +527,33 @@ class BootScene extends Phaser.Scene {
         this.textures.addCanvas('poop', c);
     }
 
-    _makeSteve() {
-        const sheet = buildSteveSheet();
-        this.textures.addSpriteSheet('steve', sheet, { frameWidth: 52, frameHeight: 76 });
-        this.anims.create({ key: 'idle',       frames: [{ key: 'steve', frame: 0 }], frameRate: 1 });
-        this.anims.create({ key: 'walk',       frames: this.anims.generateFrameNumbers('steve', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
-        this.anims.create({ key: 'steve_idle', frames: [{ key: 'steve', frame: 0 }], frameRate: 1 });
-        this.anims.create({ key: 'steve_walk', frames: this.anims.generateFrameNumbers('steve', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+    _makeToiletChar() {
+        const sheet = buildToiletCharSheet();
+        this.textures.addSpriteSheet('toilet_char', sheet, { frameWidth: 52, frameHeight: 76 });
+        this.anims.create({ key: 'toilet_char_idle', frames: [{ key: 'toilet_char', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'toilet_char_walk', frames: this.anims.generateFrameNumbers('toilet_char', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
     }
 
-    _makeSkeleton() {
-        const sheet = buildSkeletonSheet();
-        this.textures.addSpriteSheet('skeleton', sheet, { frameWidth: 52, frameHeight: 76 });
-        this.anims.create({ key: 'skeleton_idle', frames: [{ key: 'skeleton', frame: 0 }], frameRate: 1 });
-        this.anims.create({ key: 'skeleton_walk', frames: this.anims.generateFrameNumbers('skeleton', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+
+    _makeBucket() {
+        const sheet = buildBucketSheet();
+        this.textures.addSpriteSheet('bucket', sheet, { frameWidth: 52, frameHeight: 76 });
+        this.anims.create({ key: 'bucket_idle', frames: [{ key: 'bucket', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'bucket_walk', frames: this.anims.generateFrameNumbers('bucket', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
     }
 
-    _makeCreeper() {
-        const sheet = buildCreeperSheet();
-        this.textures.addSpriteSheet('creeper', sheet, { frameWidth: 52, frameHeight: 76 });
-        this.anims.create({ key: 'creeper_idle', frames: [{ key: 'creeper', frame: 0 }], frameRate: 1 });
-        this.anims.create({ key: 'creeper_walk', frames: this.anims.generateFrameNumbers('creeper', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+    _makeBroom() {
+        const sheet = buildBroomSheet();
+        this.textures.addSpriteSheet('broom', sheet, { frameWidth: 52, frameHeight: 76 });
+        this.anims.create({ key: 'broom_idle', frames: [{ key: 'broom', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'broom_walk', frames: this.anims.generateFrameNumbers('broom', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
+    }
+
+    _makeSoap() {
+        const sheet = buildSoapSheet();
+        this.textures.addSpriteSheet('soap', sheet, { frameWidth: 52, frameHeight: 76 });
+        this.anims.create({ key: 'soap_idle', frames: [{ key: 'soap', frame: 0 }], frameRate: 1 });
+        this.anims.create({ key: 'soap_walk', frames: this.anims.generateFrameNumbers('soap', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
     }
 
     _makeToilet() {
@@ -254,20 +601,26 @@ class BootScene extends Phaser.Scene {
         const c = document.createElement('canvas');
         c.width = c.height = 32;
         const g = c.getContext('2d');
-        g.fillStyle = '#5a9e32'; g.fillRect(0, 0, 32, 10);
-        g.fillStyle = '#4a8c28'; [2, 8, 16, 22].forEach(x => g.fillRect(x, 0, 3, 4));
-        g.fillStyle = '#8B6347'; g.fillRect(0, 10, 32, 22);
-        g.fillStyle = '#7a5337'; g.fillRect(4, 14, 10, 4); g.fillRect(18, 22, 10, 4);
-        g.strokeStyle = 'rgba(0,0,0,0.18)'; g.lineWidth = 1; g.strokeRect(0.5, 0.5, 31, 31);
+        // Grass top — gradient blades, no block grid
+        g.fillStyle = '#5aaa30'; g.fillRect(0, 0, 32, 10);
+        g.fillStyle = '#6abf38'; [1,5,9,13,17,21,25,29].forEach(x => g.fillRect(x, 0, 2, 5));
+        g.fillStyle = '#3d8020'; [3,11,19,27].forEach(x => g.fillRect(x, 2, 2, 6));
+        // Dirt — smooth, no tiles
+        g.fillStyle = '#9c6b3c'; g.fillRect(0, 10, 32, 22);
+        g.fillStyle = '#b07a48'; g.fillRect(0, 10, 32, 3);
+        g.fillStyle = '#7a5030'; [2,14,24].forEach(x => g.fillRect(x, 15, 6, 3));
         this.textures.addCanvas('ground', c);
     }
 
     _makeCloud() {
         const c = document.createElement('canvas');
-        c.width = 128; c.height = 48;
+        c.width = 128; c.height = 52;
         const g = c.getContext('2d');
         g.fillStyle = '#fff';
-        [[16,32],[32,32],[48,32],[64,32],[80,32],[16,16],[32,16],[48,16],[64,16],[32,0],[48,0],[64,0]].forEach(([x,y]) => g.fillRect(x,y,16,16));
+        [[22,38,20],[42,28,26],[68,32,22],[90,38,18],[55,22,18]].forEach(([x,y,r]) => {
+            g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+        });
+        g.fillRect(10, 38, 100, 12);
         this.textures.addCanvas('cloud', c);
     }
 
@@ -275,10 +628,25 @@ class BootScene extends Phaser.Scene {
         const c = document.createElement('canvas');
         c.width = c.height = 88;
         const g = c.getContext('2d');
+        const cx = 44, cy = 44;
+        // Rays
         g.fillStyle = '#FFD700';
-        g.fillRect(20, 20, 48, 48);
-        [[32,0,24,18],[32,70,24,18],[0,32,18,24],[70,32,18,24],[8,8,16,16],[64,8,16,16],[8,64,16,16],[64,64,16,16]].forEach(([x,y,w,h]) => g.fillRect(x,y,w,h));
-        g.fillStyle = '#FFF9C4'; g.fillRect(30, 30, 28, 28);
+        for (let i = 0; i < 8; i++) {
+            g.save();
+            g.translate(cx, cy);
+            g.rotate(i * Math.PI / 4);
+            g.fillRect(-4, -38, 8, 18);
+            g.restore();
+        }
+        // Outer glow circle
+        const grd = g.createRadialGradient(cx, cy, 14, cx, cy, 30);
+        grd.addColorStop(0, '#FFE840');
+        grd.addColorStop(1, '#FFD700');
+        g.fillStyle = grd;
+        g.beginPath(); g.arc(cx, cy, 30, 0, Math.PI * 2); g.fill();
+        // Inner bright centre
+        g.fillStyle = '#FFF9C4';
+        g.beginPath(); g.arc(cx, cy, 16, 0, Math.PI * 2); g.fill();
         this.textures.addCanvas('sun', c);
     }
 
@@ -484,51 +852,153 @@ class BootScene extends Phaser.Scene {
         this.textures.addCanvas('powerup_heart', c);
     }
 
+    _makeToiletBrush() {
+        const c = document.createElement('canvas');
+        c.width = 52; c.height = 72;
+        const g = c.getContext('2d');
+        const cx = 26;
+
+        // Rukojeť — světle šedá s modrým akcentem
+        g.fillStyle = '#D8E4F0';
+        g.fillRect(cx - 3, 4, 6, 40);
+        g.fillStyle = '#B0C4DC';
+        g.fillRect(cx - 2, 4, 2, 40);
+        g.fillStyle = '#EEF4FC';
+        g.fillRect(cx + 1, 4, 1, 40);
+
+        // Modrý pruh na rukojeti (rozpoznávací detail)
+        g.fillStyle = '#3A8FE8';
+        g.fillRect(cx - 3, 14, 6, 5);
+        g.fillRect(cx - 3, 26, 6, 5);
+
+        // Háček nahoře
+        g.strokeStyle = '#8899BB'; g.lineWidth = 3;
+        g.beginPath(); g.arc(cx, 7, 6.5, Math.PI, 2 * Math.PI); g.stroke();
+        g.fillStyle = '#7A8CAA';
+        g.beginPath(); g.arc(cx, 7, 3, 0, Math.PI * 2); g.fill();
+
+        // Kovový kroužek (spoj)
+        g.fillStyle = '#8899AA';
+        g.fillRect(cx - 7, 40, 14, 6);
+        g.fillStyle = '#AABBCC';
+        g.fillRect(cx - 6, 41, 12, 2);
+
+        // Záře kolem hlavy
+        g.fillStyle = 'rgba(40,140,255,0.15)';
+        g.beginPath(); g.arc(cx, 58, 18, 0, Math.PI * 2); g.fill();
+
+        // Hlava štětky — bílý ovál (velký, jasně viditelný)
+        g.fillStyle = '#F4F6FF';
+        g.beginPath(); g.arc(cx, 58, 15, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = '#AABBDD'; g.lineWidth = 1;
+        g.beginPath(); g.arc(cx, 58, 15, 0, Math.PI * 2); g.stroke();
+
+        // Štětiny — výrazně modré čáry
+        g.strokeStyle = '#1E7FE0'; g.lineWidth = 2;
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 10) {
+            g.beginPath();
+            g.moveTo(cx + Math.cos(a) * 5, 58 + Math.sin(a) * 5);
+            g.lineTo(cx + Math.cos(a) * 15, 58 + Math.sin(a) * 15);
+            g.stroke();
+        }
+
+        // Delší štětiny dolů pro efekt záchodového kartáče
+        g.strokeStyle = '#0E6FD0'; g.lineWidth = 1.5;
+        for (let i = -4; i <= 4; i++) {
+            g.beginPath();
+            g.moveTo(cx + i * 3, 70);
+            g.lineTo(cx + i * 4, 72);
+            g.stroke();
+        }
+
+        // Střed — tmavě modrý
+        g.fillStyle = '#2288DD';
+        g.beginPath(); g.arc(cx, 58, 5, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#0055BB';
+        g.beginPath(); g.arc(cx, 58, 3, 0, Math.PI * 2); g.fill();
+
+        this.textures.addCanvas('toilet_brush', c);
+    }
+
     _makePortal() {
         const c = document.createElement('canvas');
-        c.width = c.height = 64;
+        c.width = c.height = 80;
         const g = c.getContext('2d');
-        const cx = 32, cy = 32;
+        const cx = 40, cy = 40;
 
-        // Vnější kamenný kruh (Stargate)
-        g.fillStyle = '#556677';
-        g.beginPath(); g.arc(cx, cy, 30, 0, Math.PI * 2); g.fill();
+        // Vnější corona záře
+        const corona = g.createRadialGradient(cx, cy, 24, cx, cy, 40);
+        corona.addColorStop(0,   'rgba(0, 180, 255, 0.55)');
+        corona.addColorStop(0.5, 'rgba(0,  80, 255, 0.20)');
+        corona.addColorStop(1,   'rgba(0,   0, 200, 0)');
+        g.fillStyle = corona;
+        g.beginPath(); g.arc(cx, cy, 40, 0, Math.PI * 2); g.fill();
 
-        // Výřez — aby vznikl prstenec
-        g.fillStyle = '#000814';
-        g.beginPath(); g.arc(cx, cy, 21, 0, Math.PI * 2); g.fill();
+        // Kamenný kruh — 3D gradient
+        const ringGrad = g.createRadialGradient(cx - 5, cy - 5, 8, cx, cy, 36);
+        ringGrad.addColorStop(0,   '#8A9BAC');
+        ringGrad.addColorStop(0.5, '#506070');
+        ringGrad.addColorStop(1,   '#2A3848');
+        g.fillStyle = ringGrad;
+        g.beginPath(); g.arc(cx, cy, 36, 0, Math.PI * 2); g.fill();
 
-        // Chevronové zářezy na prstenci
-        g.fillStyle = '#99BBCC';
+        // Světlý okraj kruhu
+        g.strokeStyle = 'rgba(180, 210, 230, 0.8)';
+        g.lineWidth = 1.5;
+        g.beginPath(); g.arc(cx, cy, 36, 0, Math.PI * 2); g.stroke();
+
+        // Tmavý okraj vnitřní části kruhu
+        g.strokeStyle = 'rgba(0, 0, 30, 0.6)';
+        g.lineWidth = 1;
+        g.beginPath(); g.arc(cx, cy, 26, 0, Math.PI * 2); g.stroke();
+
+        // 9 Stargate chevronů — 7 oranžových (aktivovaných), 2 tmavé
         for (let i = 0; i < 9; i++) {
             const angle = (i / 9) * Math.PI * 2 - Math.PI / 2;
+            const active = i < 7;
             g.save(); g.translate(cx, cy); g.rotate(angle);
-            g.fillRect(-3.5, -29, 7, 9);
+            g.fillStyle = active ? '#CC4400' : '#445566';
+            g.beginPath();
+            g.moveTo(-4.5, -24); g.lineTo(4.5, -24);
+            g.lineTo(5.5, -32);  g.lineTo(0, -36);
+            g.lineTo(-5.5, -32); g.closePath(); g.fill();
+            if (active) {
+                g.fillStyle = '#FF8800';
+                g.beginPath();
+                g.moveTo(-2.5, -25); g.lineTo(2.5, -25);
+                g.lineTo(3, -31);    g.lineTo(0, -34);
+                g.lineTo(-3, -31);   g.closePath(); g.fill();
+            }
             g.restore();
         }
 
-        // Vnitřní záře portálu
-        const glow = g.createRadialGradient(cx, cy, 1, cx, cy, 21);
-        glow.addColorStop(0,   'rgba(200, 240, 255, 1)');
-        glow.addColorStop(0.35,'rgba(0,   170, 255, 0.95)');
-        glow.addColorStop(0.7, 'rgba(80,   0, 200, 0.8)');
-        glow.addColorStop(1,   'rgba(0,    0,  80, 0)');
-        g.fillStyle = glow;
-        g.beginPath(); g.arc(cx, cy, 21, 0, Math.PI * 2); g.fill();
+        // Vnitřní otvor — portál
+        g.fillStyle = '#000814';
+        g.beginPath(); g.arc(cx, cy, 26, 0, Math.PI * 2); g.fill();
 
-        // Vlnky na vodní hladině portálu
-        g.strokeStyle = 'rgba(180, 230, 255, 0.45)';
+        // Vnitřní záře portálu (modro-fialový kawoosh)
+        const inner = g.createRadialGradient(cx, cy - 4, 0, cx, cy, 26);
+        inner.addColorStop(0,    'rgba(230, 250, 255, 1)');
+        inner.addColorStop(0.18, 'rgba(80,  210, 255, 1)');
+        inner.addColorStop(0.50, 'rgba(0,  130, 255, 0.95)');
+        inner.addColorStop(0.80, 'rgba(70,   0, 200, 0.85)');
+        inner.addColorStop(1,    'rgba(0,    0, 100, 0)');
+        g.fillStyle = inner;
+        g.beginPath(); g.arc(cx, cy, 26, 0, Math.PI * 2); g.fill();
+
+        // Vlnky (vodní hladina portálu)
+        g.strokeStyle = 'rgba(200, 238, 255, 0.38)';
         g.lineWidth = 1;
-        for (let r = 5; r <= 18; r += 4) {
+        for (let r = 4; r <= 23; r += 4) {
             g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
         }
 
-        // Vnější záře/glow
-        const outerGlow = g.createRadialGradient(cx, cy, 20, cx, cy, 32);
-        outerGlow.addColorStop(0, 'rgba(0, 160, 255, 0.4)');
-        outerGlow.addColorStop(1, 'rgba(0,   0, 255, 0)');
-        g.fillStyle = outerGlow;
-        g.beginPath(); g.arc(cx, cy, 32, 0, Math.PI * 2); g.fill();
+        // Odraz světla uprostřed (kawoosh špička)
+        const spot = g.createRadialGradient(cx, cy - 9, 0, cx, cy - 6, 11);
+        spot.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
+        spot.addColorStop(1, 'rgba(180, 230, 255, 0)');
+        g.fillStyle = spot;
+        g.beginPath(); g.arc(cx, cy - 6, 11, 0, Math.PI * 2); g.fill();
 
         this.textures.addCanvas('powerup_portal', c);
     }
