@@ -668,7 +668,7 @@ class GameScene extends Phaser.Scene {
             [0x22CC22, 311], [0x2277FF, 288], [0x9922EE, 265]
         ];
         rbBands.forEach(([col, r]) => {
-            this._rainbowGfx.lineStyle(22, col, 0.55);
+            this._rainbowGfx.lineStyle(22, col, 0.22);
             this._rainbowGfx.beginPath();
             this._rainbowGfx.arc(rbCX, rbCY, r, Math.PI, 0, false);
             this._rainbowGfx.strokePath();
@@ -722,7 +722,7 @@ class GameScene extends Phaser.Scene {
         this.tweens.add({ targets: this.sun, alpha: sunAlpha, duration: 2000, ease: 'Sine.InOut' });
 
         // Rainbow
-        this.tweens.add({ targets: this._rainbowGfx, alpha: next === 'rainbow' ? 0.9 : 0, duration: 2500, ease: 'Sine.InOut' });
+        this.tweens.add({ targets: this._rainbowGfx, alpha: next === 'rainbow' ? 0.6 : 0, duration: 2500, ease: 'Sine.InOut' });
 
         // Rain alpha (via wState wrapper so tween works reliably)
         const rainTarget = next === 'rain' ? 0.65 : next === 'storm' ? 1.0 : 0;
