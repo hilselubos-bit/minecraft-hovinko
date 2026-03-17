@@ -12,14 +12,6 @@ class GameOverScene extends Phaser.Scene {
             localStorage.setItem('mc_best_score', String(this.finalScore));
         }
 
-        // Soap unlock at 250
-        const unlocks = JSON.parse(localStorage.getItem('mc_unlocks') || '{}');
-        this.newUnlock = false;
-        if (this.finalScore >= 250 && !unlocks.soap) {
-            unlocks.soap = true;
-            localStorage.setItem('mc_unlocks', JSON.stringify(unlocks));
-            this.newUnlock = true;
-        }
     }
 
     create() {
@@ -74,23 +66,10 @@ class GameOverScene extends Phaser.Scene {
                 <div style="
                     font-family:'Press Start 2P',monospace;
                     font-size:9px;color:#FFD700;
-                    margin-bottom:${this.newUnlock ? '10px' : '20px'};
+                    margin-bottom:20px;
                     opacity:0.85;
                 ">Score: ${this.finalScore}</div>
 
-                ${this.newUnlock ? `
-                <div style="
-                    font-family:'Press Start 2P',monospace;
-                    font-size:8px; color:#00E676;
-                    background:rgba(0,230,118,0.1);
-                    border:2px solid #00E676;
-                    border-radius:8px; padding:8px 10px;
-                    margin-bottom:16px; line-height:1.8;
-                    text-shadow:0 0 8px rgba(0,230,118,0.5);
-                    animation:unlockGlow 1s ease-in-out infinite alternate;
-                ">🔓 SOAP UNLOCKED!<br><span style="font-size:7px;color:#aaa">New character in settings!</span></div>
-                <style>@keyframes unlockGlow{from{box-shadow:0 0 6px rgba(0,230,118,0.3)}to{box-shadow:0 0 18px rgba(0,230,118,0.7)}}</style>
-                ` : ''}
 
                 <div style="
                     width:100%;height:1px;

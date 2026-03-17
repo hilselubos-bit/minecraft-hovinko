@@ -83,7 +83,7 @@ class MenuScene extends Phaser.Scene {
     // ── Walking Steve ─────────────────────────────────────────────────────────
     _buildWalkingSteve(W, H) {
         const cfg = JSON.parse(localStorage.getItem('mc_hovinko_settings') || '{}');
-        const validChars = ['toilet_char', 'bucket', 'broom', 'soap'];
+        const validChars = ['toilet_char', 'bucket', 'broom'];
         const charKey = validChars.includes(cfg.char) ? cfg.char : 'toilet_char';
         this.walkSteve = this.add.sprite(80, H - 130, charKey).setScale(1.3);
         this.walkSteve.anims.play(`${charKey}_walk`);
@@ -308,48 +308,21 @@ class MenuScene extends Phaser.Scene {
             fontFamily: '"Press Start 2P", monospace', fontSize: '9px', fill: '#aaa'
         }).setOrigin(0, 0.5).setDepth(D + 1));
 
-        const unlocks = JSON.parse(localStorage.getItem('mc_unlocks') || '{}');
-        const chars = [
-            { key: 'toilet_char', label: 'TOILET' },
-            { key: 'bucket',      label: 'BUCKET'  },
-            { key: 'broom',       label: 'BROOM'   },
-            { key: 'soap',        label: 'SOAP',    special: true }
-        ];
-        chars.forEach((ch, i) => {
-            const bx = 70 + i * 115, by = 180;
+        [{ key: 'toilet_char', label: 'TOILET' }, { key: 'bucket', label: 'BUCKET' }, { key: 'broom', label: 'BROOM' }]
+        .forEach((ch, i) => {
+            const bx = 102 + i * 138, by = 180;
             const sel = s.char === ch.key;
-            const locked = ch.special && !unlocks.soap;
-            const bW = 44; // half-width of box (total 88px)
             const box = T(this.add.graphics().setDepth(D + 1));
-            box.fillStyle(locked ? 0x111111 : (sel ? 0x4A148C : 0x1a1a1a), 1);
-            box.fillRoundedRect(bx - bW, by - 62, bW * 2, 116, 8);
-            box.lineStyle(3, locked ? 0x333333 : (sel ? 0xCC88FF : 0x444444), 1);
-            box.strokeRoundedRect(bx - bW, by - 62, bW * 2, 116, 8);
-            if (!locked) {
-                box.setInteractive(new Phaser.Geom.Rectangle(bx - bW, by - 62, bW * 2, 116), Phaser.Geom.Rectangle.Contains);
-                box.on('pointerdown', () => { close(); this._showSettings(W, { ...s, char: ch.key }); });
-            }
-            if (locked) {
-                // Lock icon
-                T(this.add.text(bx, by - 18, '🔒', { fontSize: '22px' }).setOrigin(0.5).setDepth(D + 2));
-                T(this.add.text(bx, by + 10, '250 pts', {
-                    fontFamily: '"Press Start 2P", monospace', fontSize: '6px', fill: '#666'
-                }).setOrigin(0.5).setDepth(D + 2));
-            } else {
-                T(this.add.image(bx, by - 8, ch.key, 0).setScale(0.95).setDepth(D + 2));
-                if (ch.special) {
-                    // ⚡ badge for unlocked soap
-                    const badge = T(this.add.graphics().setDepth(D + 2));
-                    badge.fillStyle(0xFFAB00, 1);
-                    badge.fillRoundedRect(bx - bW + 2, by - 62 + 2, bW * 2 - 4, 14, 4);
-                    T(this.add.text(bx, by - 62 + 9, '⚡ FASTER!', {
-                        fontFamily: '"Press Start 2P", monospace', fontSize: '5px', fill: '#111'
-                    }).setOrigin(0.5).setDepth(D + 3));
-                }
-            }
-            T(this.add.text(bx, by + 46, locked ? 'LOCKED' : ch.label, {
-                fontFamily: '"Press Start 2P", monospace', fontSize: '6px',
-                fill: locked ? '#444' : (sel ? '#CC88FF' : '#777')
+            box.fillStyle(sel ? 0x4A148C : 0x1a1a1a, 1);
+            box.fillRoundedRect(bx - 52, by - 62, 104, 116, 8);
+            box.lineStyle(3, sel ? 0xCC88FF : 0x444444, 1);
+            box.strokeRoundedRect(bx - 52, by - 62, 104, 116, 8);
+            box.setInteractive(new Phaser.Geom.Rectangle(bx - 52, by - 62, 104, 116), Phaser.Geom.Rectangle.Contains);
+            box.on('pointerdown', () => { close(); this._showSettings(W, { ...s, char: ch.key }); });
+            T(this.add.image(bx, by - 8, ch.key, 0).setScale(1.05).setDepth(D + 2));
+            T(this.add.text(bx, by + 46, ch.label, {
+                fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
+                fill: sel ? '#CC88FF' : '#777'
             }).setOrigin(0.5).setDepth(D + 2));
         });
 

@@ -39,7 +39,7 @@ class GameScene extends Phaser.Scene {
 
         // Nastavení postavy a padajícího předmětu
         const cfg = JSON.parse(localStorage.getItem('mc_hovinko_settings') || '{}');
-        const validChars      = ['toilet_char', 'bucket', 'broom', 'soap'];
+        const validChars      = ['toilet_char', 'bucket', 'broom'];
         const validPortalItems = ['toilet', 'toilet_paper', 'toilet_brush'];
         this.charKey      = validChars.includes(cfg.char)             ? cfg.char        : 'toilet_char';
         this.itemKey      = 'poop'; // hlavní hra vždy hovínko
@@ -576,7 +576,7 @@ class GameScene extends Phaser.Scene {
         }
 
         // ── Hráč ────────────────────────────────────────────────────────────
-        const spd = this.charKey === 'soap' ? 650 : 560;
+        const spd = 560;
         let vx = 0;
         if (this.cursors.left.isDown  || this.wasd.A.isDown) vx = -spd;
         if (this.cursors.right.isDown || this.wasd.D.isDown) vx =  spd;

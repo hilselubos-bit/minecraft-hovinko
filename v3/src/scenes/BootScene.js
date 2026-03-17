@@ -1,4 +1,3 @@
-
 // ─── Bucket (kbelík) character sheet ─────────────────────────────────────────
 function buildBucketSheet() {
     const c = document.createElement('canvas');
@@ -351,142 +350,6 @@ function drawToiletCharFrame(g, ox, fr) {
     g.beginPath(); g.arc(hx, hy, 3, 0, Math.PI * 2); g.fill();
 }
 
-// ─── Soap dispenser (tekuté mýdlo) character sheet ───────────────────────────
-function buildSoapSheet() {
-    const c = document.createElement('canvas');
-    c.width = 208; c.height = 76;
-    const g = c.getContext('2d');
-    [0, 1, 2, 3].forEach(f => drawSoapFrame(g, f * 52, f));
-    return c;
-}
-
-function drawSoapFrame(g, ox, fr) {
-    const cx = ox + 26;
-    const tilts = [0, 8, 0, -8];
-    const tilt = tilts[fr] * Math.PI / 180;
-
-    g.save();
-    g.translate(cx, 76); g.rotate(tilt); g.translate(-cx, -76);
-
-    // === Bottle body ===
-    const bW = 13; // half-width
-    g.fillStyle = '#4FC3F7';
-    g.beginPath();
-    g.moveTo(cx - bW + 3, 28);
-    g.lineTo(cx + bW - 3, 28);
-    g.quadraticCurveTo(cx + bW, 28, cx + bW, 34);
-    g.lineTo(cx + bW, 64);
-    g.quadraticCurveTo(cx + bW, 70, cx + bW - 3, 70);
-    g.lineTo(cx - bW + 3, 70);
-    g.quadraticCurveTo(cx - bW, 70, cx - bW, 64);
-    g.lineTo(cx - bW, 34);
-    g.quadraticCurveTo(cx - bW, 28, cx - bW + 3, 28);
-    g.closePath(); g.fill();
-
-    // Bottle highlight
-    g.fillStyle = 'rgba(255,255,255,0.28)';
-    g.beginPath(); g.ellipse(cx - 4, 43, 4, 15, 0, 0, Math.PI * 2); g.fill();
-
-    // Bottle outline
-    g.strokeStyle = '#0288D1'; g.lineWidth = 1.5;
-    g.beginPath();
-    g.moveTo(cx - bW + 3, 28);
-    g.lineTo(cx + bW - 3, 28);
-    g.quadraticCurveTo(cx + bW, 28, cx + bW, 34);
-    g.lineTo(cx + bW, 64);
-    g.quadraticCurveTo(cx + bW, 70, cx + bW - 3, 70);
-    g.lineTo(cx - bW + 3, 70);
-    g.quadraticCurveTo(cx - bW, 70, cx - bW, 64);
-    g.lineTo(cx - bW, 34);
-    g.quadraticCurveTo(cx - bW, 28, cx - bW + 3, 28);
-    g.closePath(); g.stroke();
-
-    // White label on bottle (face lives here)
-    g.fillStyle = 'rgba(255,255,255,0.88)';
-    g.fillRect(cx - 9, 32, 18, 36);
-
-    // === Pump collar (sits on top of bottle) ===
-    g.fillStyle = '#78909C';
-    g.beginPath(); g.ellipse(cx, 28, 10, 4, 0, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = '#546E7A'; g.lineWidth = 1;
-    g.beginPath(); g.ellipse(cx, 28, 10, 4, 0, 0, Math.PI * 2); g.stroke();
-
-    // === Pump stick (pressed down on moving frames) ===
-    const pumpOff = (fr === 1 || fr === 3) ? 3 : 0;
-    g.fillStyle = '#90A4AE';
-    g.fillRect(cx - 2, 10 + pumpOff, 4, 18 - pumpOff);
-
-    // === Pump head ===
-    g.fillStyle = '#78909C';
-    g.beginPath(); g.ellipse(cx, 10 + pumpOff, 8, 3.5, 0, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = '#546E7A'; g.lineWidth = 1;
-    g.beginPath(); g.ellipse(cx, 10 + pumpOff, 8, 3.5, 0, 0, Math.PI * 2); g.stroke();
-
-    // === Nozzle (points right) ===
-    g.fillStyle = '#607D8B';
-    g.fillRect(cx, 7 + pumpOff, 12, 4);
-    g.beginPath(); g.arc(cx + 12, 9 + pumpOff, 2, 0, Math.PI * 2); g.fill();
-
-    // Soap bubble drip on moving frames
-    if (fr === 1 || fr === 3) {
-        g.fillStyle = 'rgba(178,235,242,0.85)';
-        g.beginPath(); g.arc(cx + 15, 14 + pumpOff, 3.5, 0, Math.PI * 2); g.fill();
-        g.beginPath(); g.arc(cx + 19, 19 + pumpOff, 2,   0, Math.PI * 2); g.fill();
-        g.beginPath(); g.arc(cx + 12, 19 + pumpOff, 2.5, 0, Math.PI * 2); g.fill();
-    }
-
-    // === Base ellipse ===
-    g.fillStyle = '#0288D1';
-    g.beginPath(); g.ellipse(cx, 70, bW, 4, 0, 0, Math.PI * 2); g.fill();
-
-    // === Face (on white label) ===
-    const faceY = 49;
-
-    // Cheeks
-    g.fillStyle = 'rgba(255,120,100,0.3)';
-    g.beginPath(); g.arc(cx - 7, faceY + 5, 4.5, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.arc(cx + 7, faceY + 5, 4.5, 0, Math.PI * 2); g.fill();
-
-    // Eyebrows
-    const eyeY = faceY - 5;
-    g.strokeStyle = '#1A3A5A'; g.lineWidth = 1.5;
-    if (fr === 1 || fr === 3) {
-        g.beginPath(); g.moveTo(cx - 8, eyeY - 5); g.lineTo(cx - 2, eyeY - 7); g.stroke();
-        g.beginPath(); g.moveTo(cx + 2, eyeY - 7); g.lineTo(cx + 8, eyeY - 5); g.stroke();
-    } else if (fr === 2) {
-        g.beginPath(); g.moveTo(cx - 8, eyeY - 6); g.lineTo(cx - 2, eyeY - 8); g.stroke();
-        g.beginPath(); g.moveTo(cx + 2, eyeY - 8); g.lineTo(cx + 8, eyeY - 6); g.stroke();
-    } else {
-        g.beginPath(); g.moveTo(cx - 8, eyeY - 4); g.lineTo(cx - 2, eyeY - 4); g.stroke();
-        g.beginPath(); g.moveTo(cx + 2, eyeY - 4); g.lineTo(cx + 8, eyeY - 4); g.stroke();
-    }
-
-    // Eyes
-    const eyeH = fr === 2 ? 3.8 : fr === 0 ? 3.0 : 3.3;
-    g.fillStyle = '#fff';
-    g.beginPath(); g.ellipse(cx - 5, eyeY, 3.5, eyeH, 0, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.ellipse(cx + 5, eyeY, 3.5, eyeH, 0, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#1A2A3A';
-    g.beginPath(); g.arc(cx - 4.5, eyeY + 0.5, 1.7, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.arc(cx + 5.5, eyeY + 0.5, 1.7, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#fff';
-    g.beginPath(); g.arc(cx - 3.8, eyeY - 0.5, 0.8, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.arc(cx + 6.2, eyeY - 0.5, 0.8, 0, Math.PI * 2); g.fill();
-
-    // Mouth
-    g.strokeStyle = '#1A3A5A'; g.lineWidth = 1.5;
-    const mY = faceY + 9;
-    if (fr === 2) {
-        g.beginPath(); g.arc(cx, mY - 2, 5, 0.1 * Math.PI, 0.9 * Math.PI); g.stroke();
-    } else if (fr === 1 || fr === 3) {
-        g.beginPath(); g.arc(cx, mY, 2.8, 0, Math.PI * 2); g.stroke();
-    } else {
-        g.beginPath(); g.arc(cx, mY - 1, 3.5, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
-    }
-
-    g.restore();
-}
-
 // ─── BootScene ───────────────────────────────────────────────────────────────
 class BootScene extends Phaser.Scene {
     constructor() { super('BootScene'); }
@@ -497,7 +360,6 @@ class BootScene extends Phaser.Scene {
 
         this._makeBucket();
         this._makeBroom();
-        this._makeSoap();
         this._makeToilet();
         this._makeToiletPaper();
         this._makeGround();
@@ -547,13 +409,6 @@ class BootScene extends Phaser.Scene {
         this.textures.addSpriteSheet('broom', sheet, { frameWidth: 52, frameHeight: 76 });
         this.anims.create({ key: 'broom_idle', frames: [{ key: 'broom', frame: 0 }], frameRate: 1 });
         this.anims.create({ key: 'broom_walk', frames: this.anims.generateFrameNumbers('broom', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
-    }
-
-    _makeSoap() {
-        const sheet = buildSoapSheet();
-        this.textures.addSpriteSheet('soap', sheet, { frameWidth: 52, frameHeight: 76 });
-        this.anims.create({ key: 'soap_idle', frames: [{ key: 'soap', frame: 0 }], frameRate: 1 });
-        this.anims.create({ key: 'soap_walk', frames: this.anims.generateFrameNumbers('soap', { start: 0, end: 3 }), frameRate: 9, repeat: -1 });
     }
 
     _makeToilet() {
