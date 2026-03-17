@@ -268,11 +268,13 @@ class PortalWorldScene extends Phaser.Scene {
         }
 
         // ── Planets ───────────────────────────────────────────────────────────
+        const PLANET_GAP = 280;
+        const maxPlanetX = Math.max(...this._planets.map(p => p.img.x));
         this._planets.forEach(p => {
             p.img.x -= p.spd * dt;
             p.lbl.x  = p.img.x;
-            if (p.img.x < -140) {
-                p.img.x = this.W + 140;
+            if (p.img.x < -160) {
+                p.img.x = maxPlanetX + PLANET_GAP;
                 p.lbl.x = p.img.x;
             }
         });
