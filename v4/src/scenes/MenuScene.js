@@ -341,6 +341,9 @@ class MenuScene extends Phaser.Scene {
                 T(this.add.text(bx + bHalf - 4, by - 62 + 4, '🔒', { fontSize: '15px' })
                     .setOrigin(1, 0).setDepth(D + 3));
                 // Texty mimo orámování — pod boxem
+                T(this.add.text(bx, by + 38, ch.label, {
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '8px', fill: '#666'
+                }).setOrigin(0.5).setDepth(D + 2));
                 T(this.add.text(bx, by + 62, 'LOCKED', {
                     fontFamily: '"Press Start 2P", monospace', fontSize: '10px', fill: '#aaa'
                 }).setOrigin(0.5).setDepth(D + 2));
