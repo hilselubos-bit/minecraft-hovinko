@@ -651,6 +651,7 @@ class BootScene extends Phaser.Scene {
         this._makePortal();
         this._makeToiletBrush();
         this._makeStars();
+        this._makePlanets();
         document.fonts.load('10px "Press Start 2P"').finally(() => {
             this.scene.start('MenuScene');
         });
@@ -1165,5 +1166,102 @@ class BootScene extends Phaser.Scene {
             }
             this.textures.addCanvas(key, c);
         });
+    }
+
+    _makePlanets() {
+        // ── Země ────────────────────────────────────────────────────────────
+        {
+            const c = document.createElement('canvas'); c.width = c.height = 72;
+            const g = c.getContext('2d'); const cx = 36, cy = 36, r = 32;
+            g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.clip();
+            // Oceán
+            g.fillStyle = '#1a6fa8'; g.fillRect(0, 0, 72, 72);
+            // Kontinenty
+            g.fillStyle = '#2d8a3e';
+            g.beginPath(); g.ellipse(cx-3, cy-5, 9, 13, -0.3, 0, Math.PI*2); g.fill();
+            g.beginPath(); g.ellipse(cx-15, cy+3, 6, 13, 0.2, 0, Math.PI*2); g.fill();
+            g.beginPath(); g.ellipse(cx+9, cy-7, 13, 9, 0.4, 0, Math.PI*2); g.fill();
+            g.beginPath(); g.ellipse(cx+5, cy+12, 8, 6, -0.2, 0, Math.PI*2); g.fill();
+            // Mraky
+            g.fillStyle = 'rgba(255,255,255,0.55)';
+            g.beginPath(); g.ellipse(cx+2, cy-19, 11, 4, 0.5, 0, Math.PI*2); g.fill();
+            g.beginPath(); g.ellipse(cx-11, cy+15, 9, 3, -0.3, 0, Math.PI*2); g.fill();
+            g.restore();
+            // Okraj
+            g.strokeStyle = 'rgba(255,255,255,0.25)'; g.lineWidth = 1.5;
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.stroke();
+            this.textures.addCanvas('planet_earth', c);
+        }
+        // ── Saturn ──────────────────────────────────────────────────────────
+        {
+            const c = document.createElement('canvas'); c.width = 110; c.height = 72;
+            const g = c.getContext('2d'); const cx = 55, cy = 36, r = 26;
+            // Zadní část prstence (za planetou)
+            g.strokeStyle = 'rgba(190,155,80,0.55)'; g.lineWidth = 7;
+            g.beginPath(); g.ellipse(cx, cy+4, 46, 11, 0, Math.PI, Math.PI*2); g.stroke();
+            g.strokeStyle = 'rgba(220,190,110,0.35)'; g.lineWidth = 13;
+            g.beginPath(); g.ellipse(cx, cy+4, 46, 11, 0, Math.PI, Math.PI*2); g.stroke();
+            // Tělo planety
+            g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.clip();
+            g.fillStyle = '#e8c85a'; g.fillRect(cx-r, cy-r, r*2, r*2);
+            // Pruhy
+            [[-10,'rgba(200,160,60,0.7)'],[-3,'rgba(215,175,70,0.5)'],[5,'rgba(195,155,55,0.65)'],[12,'rgba(210,170,65,0.5)']].forEach(([dy,col]) => {
+                g.fillStyle = col;
+                g.fillRect(cx-r, cy+dy-3, r*2, 5);
+            });
+            g.restore();
+            g.strokeStyle = 'rgba(255,235,150,0.3)'; g.lineWidth = 1;
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.stroke();
+            // Přední část prstence (před planetou)
+            g.strokeStyle = 'rgba(190,155,80,0.55)'; g.lineWidth = 7;
+            g.beginPath(); g.ellipse(cx, cy+4, 46, 11, 0, 0, Math.PI); g.stroke();
+            g.strokeStyle = 'rgba(220,190,110,0.35)'; g.lineWidth = 13;
+            g.beginPath(); g.ellipse(cx, cy+4, 46, 11, 0, 0, Math.PI); g.stroke();
+            this.textures.addCanvas('planet_saturn', c);
+        }
+        // ── Uran ────────────────────────────────────────────────────────────
+        {
+            const c = document.createElement('canvas'); c.width = 90; c.height = 72;
+            const g = c.getContext('2d'); const cx = 45, cy = 36, r = 27;
+            // Zadní prsten (nakloněný — Uran se točí na boku)
+            g.strokeStyle = 'rgba(100,230,230,0.4)'; g.lineWidth = 5;
+            g.beginPath(); g.ellipse(cx, cy, 14, 42, 0.25, Math.PI*0.55, Math.PI*1.45); g.stroke();
+            // Tělo
+            g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.clip();
+            const grad = g.createRadialGradient(cx-8, cy-8, 4, cx, cy, r);
+            grad.addColorStop(0, '#aaf0f0'); grad.addColorStop(0.5, '#5ecece'); grad.addColorStop(1, '#2a9a9a');
+            g.fillStyle = grad; g.fillRect(cx-r, cy-r, r*2, r*2);
+            // Jemné pruhy
+            g.fillStyle = 'rgba(180,245,245,0.3)'; g.fillRect(cx-r, cy-8, r*2, 5);
+            g.fillStyle = 'rgba(40,160,160,0.3)'; g.fillRect(cx-r, cy+6, r*2, 4);
+            g.restore();
+            g.strokeStyle = 'rgba(150,240,240,0.25)'; g.lineWidth = 1;
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.stroke();
+            // Přední prsten
+            g.strokeStyle = 'rgba(100,230,230,0.4)'; g.lineWidth = 5;
+            g.beginPath(); g.ellipse(cx, cy, 14, 42, 0.25, Math.PI*1.45, Math.PI*0.55+Math.PI*2); g.stroke();
+            this.textures.addCanvas('planet_uranus', c);
+        }
+        // ── Neptun ──────────────────────────────────────────────────────────
+        {
+            const c = document.createElement('canvas'); c.width = c.height = 72;
+            const g = c.getContext('2d'); const cx = 36, cy = 36, r = 28;
+            g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.clip();
+            const grad = g.createRadialGradient(cx-9, cy-9, 3, cx, cy, r);
+            grad.addColorStop(0, '#5588ff'); grad.addColorStop(0.5, '#2244cc'); grad.addColorStop(1, '#0a1a88');
+            g.fillStyle = grad; g.fillRect(cx-r, cy-r, r*2, r*2);
+            // Tmavá skvrna (Great Dark Spot)
+            g.fillStyle = 'rgba(10,20,100,0.7)';
+            g.beginPath(); g.ellipse(cx-6, cy+4, 10, 6, -0.4, 0, Math.PI*2); g.fill();
+            // Bílá oblaka
+            g.fillStyle = 'rgba(255,255,255,0.7)';
+            g.beginPath(); g.ellipse(cx+4, cy-12, 8, 3, 0.3, 0, Math.PI*2); g.fill();
+            g.fillStyle = 'rgba(255,255,255,0.5)';
+            g.beginPath(); g.ellipse(cx-8, cy+14, 6, 2, -0.2, 0, Math.PI*2); g.fill();
+            g.restore();
+            g.strokeStyle = 'rgba(100,150,255,0.25)'; g.lineWidth = 1.5;
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.stroke();
+            this.textures.addCanvas('planet_neptune', c);
+        }
     }
 }

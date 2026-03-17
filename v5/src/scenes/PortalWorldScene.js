@@ -42,6 +42,7 @@ class PortalWorldScene extends Phaser.Scene {
         this._buildBg();
         this._buildInput();
         this._buildHUD();
+        this._buildPlanets();
 
         // Tunnel graphics (redrawn every frame)
         this.tunnelGfx = this.add.graphics().setDepth(1);
@@ -57,6 +58,29 @@ class PortalWorldScene extends Phaser.Scene {
     _buildBg() {
         this.add.image(this.W / 2, this.H / 2, 'stars_far').setDepth(0);
         this.add.image(this.W / 2, this.H / 2, 'stars_near').setAlpha(0.5).setDepth(0);
+    }
+
+    // ── Planets drifting through space ────────────────────────────────────────
+    _buildPlanets() {
+        // In order from the Sun: Earth (3rd), Saturn (6th), Uranus (7th), Neptune (8th)
+        const defs = [
+            { key: 'planet_earth',   label: '🌍 Země',   scale: 0.9, spd: 14, y: 0.18, x0: 0.1  },
+            { key: 'planet_saturn',  label: '🪐 Saturn',  scale: 1.0, spd: 10, y: 0.38, x0: 1.3  },
+            { key: 'planet_uranus',  label: '🔵 Uran',    scale: 0.85,spd: 17, y: 0.26, x0: 0.55 },
+            { key: 'planet_neptune', label: '🔵 Neptun',  scale: 0.8, spd: 12, y: 0.46, x0: 1.7  },
+        ];
+        this._planets = defs.map(d => {
+            const img = this.add.image(this.W * d.x0, this.H * d.y, d.key)
+                .setScale(d.scale).setAlpha(0.75).setDepth(0.8);
+            const sty = {
+                fontFamily: '"Press Start 2P", monospace',
+                fontSize: '7px', fill: '#ccddff',
+                stroke: '#000', strokeThickness: 2
+            };
+            const lbl = this.add.text(img.x, img.y + img.displayHeight * 0.5 + 6, d.label, sty)
+                .setOrigin(0.5, 0).setDepth(0.9).setAlpha(0.75);
+            return { img, lbl, spd: d.spd, scale: d.scale };
+        });
     }
 
     // ── Input ─────────────────────────────────────────────────────────────────
@@ -233,6 +257,18 @@ class PortalWorldScene extends Phaser.Scene {
             }
         }
 
+        // ── Planets ───────────────────────────────────────────────────────────
+        this._planets.forEach(p => {
+            p.img.x -= p.spd * dt;
+            p.lbl.x  = p.img.x;
+            p.lbl.y  = p.img.y + p.img.displayHeight * 0.5 + 6;
+            // Wrap around when off-screen left
+            if (p.img.x < -120) {
+                p.img.x = this.W + 120;
+                p.lbl.x = p.img.x;
+            }
+        });
+
         // ── Tunnel visual ─────────────────────────────────────────────────────
         this._drawTunnel(vpX, vpY);
 
@@ -322,6 +358,7 @@ class PortalWorldScene extends Phaser.Scene {
         this.isLeaving = true;
         this.objects.forEach(o => o.sprite.destroy()); this.objects = [];
         this.magnets.forEach(m => m.sprite.destroy()); this.magnets = [];
+        this._planets.forEach(p => { p.img.destroy(); p.lbl.destroy(); }); this._planets = [];
         if (this._magnetTxt) { this._magnetTxt.destroy(); this._magnetTxt = null; }
         this.cameras.main.flash(500, 0, 180, 255, false);
         this.time.delayedCall(500, () => {
