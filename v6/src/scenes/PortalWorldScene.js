@@ -456,7 +456,7 @@ class PortalWorldScene extends Phaser.Scene {
     _catch(o, idx) {
         o.sprite.destroy();
         this.objects.splice(idx, 1);
-        this.score += 5 * (this.sharedStar > 0 ? 2 : 1);
+        this.score += (this.sharedStar > 0 ? 2 : 1);
         this.scoreTxt.setText(`${this.score}`);
     }
 
