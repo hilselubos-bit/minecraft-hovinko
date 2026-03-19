@@ -734,14 +734,20 @@ class GameScene extends Phaser.Scene {
             p.y      += p.vy * dt;
             p.rotation += p.vr * dt;
             p.wobble += 2.0 * dt;
-            // Normální lehký pohyb + tornádo wind cik-cak (každé hovínko jde jinou fází)
-            const windX = this._tornadoActive
-                ? Math.sin(this._tornadoTime * 4.2 + p.wobble * 1.8) * 200 * tornadoRamp * dt
-                : Math.sin(p.wobble) * 0.55;
-            p.x      += windX;
-            // Tornádo mírně brzdí/urychluje pád → nepravidelný vertikální pohyb
+
             if (this._tornadoActive) {
-                p.y += Math.sin(this._tornadoTime * 2.8 + p.wobble * 0.9) * 55 * tornadoRamp * dt;
+                // Kumulativní horizontální rychlost — každé hovínko má jinou fázi (p.wobble*4)
+                // → různý drift směr → hráč musí aktivně pronásledovat
+                if (p.tVx === undefined) p.tVx = (Math.random() - 0.5) * 80;
+                p.tVx += Math.sin(this._tornadoTime * 1.6 + p.wobble * 4) * 480 * tornadoRamp * dt;
+                p.tVx *= (1 - 1.8 * dt);   // tření, terminální rychlost ~480/1.8 ≈ 267 px/s
+                p.tVx  = Phaser.Math.Clamp(p.tVx, -300, 300);
+                p.x   += p.tVx * dt;
+                // Mírné vertikální kolísání — nepravidelný pád
+                p.y   += Math.sin(this._tornadoTime * 2.5 + p.wobble) * 38 * tornadoRamp * dt;
+            } else {
+                p.tVx = undefined;
+                p.x  += Math.sin(p.wobble) * 0.55;  // normální lehký wobble
             }
             // Velkorysý hitbox — chytání ze strany i shora
             if (Math.abs(p.x - this.player.x) < 55 && p.y > this.player.y - 95 && p.y < this.player.y + 10) {
