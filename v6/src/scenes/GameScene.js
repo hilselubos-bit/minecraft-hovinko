@@ -51,6 +51,10 @@ class GameScene extends Phaser.Scene {
         // Objekty
         this.poops    = [];
         this.powerups = [];
+        this.bombs    = [];
+
+        // Bomb timer — první bomba nejdříve po 35s, jen od level 3+
+        this.bombCd   = 35 + Math.random() * 15;
 
         this._buildBg();
         this._initWeather();
@@ -84,8 +88,9 @@ class GameScene extends Phaser.Scene {
                 this.enteringPortal = false;
                 // Obnov hráče (byl zmenšen na 0 při vstupu do portálu)
                 this.player.setScale(1.3).setAlpha(1);
-                // Smažeme hovínka co spadla během portálu
+                // Smažeme hovínka a bomby co spadla během portálu
                 this.poops.forEach(p => p.destroy()); this.poops = [];
+                this.bombs.forEach(b => { this.tweens.killTweensOf(b); b.destroy(); }); this.bombs = [];
                 this._hudUpdate();
                 // Flash přechodu zpět
                 this.cameras.main.flash(500, 0, 180, 255, false);
@@ -369,6 +374,75 @@ class GameScene extends Phaser.Scene {
         });
     }
 
+    _spawnBomb() {
+        const x   = Phaser.Math.Between(50, this.W - 50);
+        const img = this.add.image(x, -50, 'bomb').setScale(0).setDepth(8);
+        img.vy     = 90 + Math.random() * 30;   // trochu pomalejší než poop — čas reagovat
+        img.vr     = Phaser.Math.FloatBetween(-1.2, 1.2);
+        img.wobble = Math.random() * Math.PI * 2;
+        this.bombs.push(img);
+
+        // Pop-in animace
+        this.tweens.add({ targets: img, scale: 1.1, duration: 280, ease: 'Back.Out' });
+
+        // Pulsující červená záře kolem bomby (opakuje se dokud letí)
+        this.tweens.add({ targets: img, alpha: 0.65, duration: 280, yoyo: true, repeat: -1 });
+
+        // Výstražný text "⚠ BOMB!" — bliká nahoru
+        for (let b = 0; b < 3; b++) {
+            const warn = this.add.text(x, 90 + b * 6, '⚠ BOMB! VYHNI SE!', {
+                fontFamily: '"Press Start 2P", monospace', fontSize: '10px',
+                fill: '#FF2222', stroke: '#000', strokeThickness: 3
+            }).setOrigin(0.5).setDepth(25).setAlpha(0);
+            this.tweens.add({ targets: warn, alpha: 1, duration: 130, delay: b * 280,
+                yoyo: true, hold: 200, onComplete: () => warn.destroy() });
+        }
+    }
+
+    _bombHit(bomb) {
+        const x = bomb.x, y = bomb.y;
+        this.tweens.killTweensOf(bomb);
+        bomb.destroy();
+        this.bombs.splice(this.bombs.indexOf(bomb), 1);
+
+        // Screen efekty
+        this.cameras.main.shake(450, 0.028);
+        this.cameras.main.flash(320, 255, 80, 0, false);
+        this._sound('bomb');
+
+        // Velký 💥 BOOM! text
+        const boom = this.add.text(x, y - 10, '💥 BOOM!', {
+            fontFamily: '"Press Start 2P", monospace', fontSize: '22px',
+            fill: '#FF4500', stroke: '#000', strokeThickness: 5
+        }).setOrigin(0.5).setDepth(35).setScale(0.2);
+        this.tweens.chain({ targets: boom, tweens: [
+            { scale: 1.3, duration: 220, ease: 'Back.Out' },
+            { alpha: 0, y: boom.y - 90, delay: 700, duration: 500, onComplete: () => boom.destroy() }
+        ]});
+
+        // Hovínka létají do všech stran
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const dist  = 70 + Math.random() * 60;
+            const fp    = this.add.image(x, y, 'poop').setScale(0.7 + Math.random() * 0.4).setDepth(14);
+            this.tweens.add({
+                targets: fp,
+                x: x + Math.cos(angle) * dist,
+                y: y + Math.sin(angle) * dist,
+                alpha: 0, rotation: (Math.random() - 0.5) * 10,
+                duration: 550, ease: 'Power2.Out',
+                onComplete: () => fp.destroy()
+            });
+        }
+
+        // Particle burst — oranžové/červené
+        this.emitter.setPosition(x, y);
+        this.emitter.explode(40);
+
+        // Ztráta života (štít absorbuje)
+        this._miss();
+    }
+
     // ═══ CHYCENÍ / ZTRÁTA ═════════════════════════════════════════════════════
     _catchPoop(p) {
         const x = p.x, y = p.y;
@@ -576,6 +650,7 @@ class GameScene extends Phaser.Scene {
         };
 
         if      (type === 'catch')      { osc(523,.08); osc(784,.12); }
+        else if (type === 'bomb')       { osc(80,.12,'sawtooth',.3); osc(60,.25,'sawtooth',.25,.08); osc(140,.18,'square',.15,.05); }
         else if (type === 'miss')       { osc(280,.35,'sawtooth'); }
         else if (type === 'powerup')    { [523,784,1047,1318].forEach((f,i) => osc(f,.15,'square',.15,i*.08)); }
         else if (type === 'shieldBreak'){ [600,400,200].forEach((f,i) => osc(f,.12,'sawtooth',.15,i*.1)); }
@@ -614,6 +689,15 @@ class GameScene extends Phaser.Scene {
         // ── Spawn power-upů ──────────────────────────────────────────────────
         this.puCd -= dt;
         if (this.puCd <= 0) { this._spawnPowerup(); this.puCd = this.puInterval; }
+
+        // ── Bomba (od level 3) ───────────────────────────────────────────────
+        if (this.level >= 3) {
+            this.bombCd -= dt;
+            if (this.bombCd <= 0) {
+                this._spawnBomb();
+                this.bombCd = 35 + Math.random() * 20;
+            }
+        }
 
         // ── Garantovaný portál (každých 40s) ─────────────────────────────────
         this._portalGcd -= dt;
@@ -662,6 +746,23 @@ class GameScene extends Phaser.Scene {
                 this._catchPowerup(p); continue;
             }
             if (p.y > this.H + 60) { p.destroy(); this.powerups.splice(i, 1); }
+        }
+
+        // ── Bomby ────────────────────────────────────────────────────────────
+        for (let i = this.bombs.length - 1; i >= 0; i--) {
+            const b = this.bombs[i];
+            b.y      += b.vy * dt;
+            b.rotation += b.vr * dt;
+            b.wobble += 1.8 * dt;
+            b.x      += Math.sin(b.wobble) * 0.5;
+            if (Math.abs(b.x - this.player.x) < 52 && b.y > this.player.y - 95 && b.y < this.player.y + 10) {
+                this._bombHit(b); continue;
+            }
+            // Bomba padla na zem — jen zmizí, žádná penalizace
+            if (b.y > this.H + 50) {
+                this.tweens.killTweensOf(b);
+                b.destroy(); this.bombs.splice(i, 1);
+            }
         }
 
         // ── Počasí ───────────────────────────────────────────────────────────

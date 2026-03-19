@@ -654,6 +654,7 @@ class BootScene extends Phaser.Scene {
         this._makePlanets();
         this._makeMagnet();
         this._makeSpaceship();
+        this._makeBomb();
         document.fonts.load('10px "Press Start 2P"').finally(() => {
             this.scene.start('MenuScene');
         });
@@ -1270,6 +1271,47 @@ class BootScene extends Phaser.Scene {
             g.fillStyle = col; g.beginPath(); g.arc(x, y, 3, 0, Math.PI*2); g.fill();
         });
         this.textures.addCanvas('powerup_magnet', c);
+    }
+
+    _makeBomb() {
+        const c = document.createElement('canvas'); c.width = c.height = 64;
+        const g = c.getContext('2d');
+
+        // Outer red glow ring
+        const grd = g.createRadialGradient(32, 37, 14, 32, 37, 30);
+        grd.addColorStop(0, 'rgba(255,60,0,0.0)');
+        grd.addColorStop(0.65, 'rgba(255,60,0,0.0)');
+        grd.addColorStop(1, 'rgba(255,60,0,0.45)');
+        g.fillStyle = grd;
+        g.beginPath(); g.arc(32, 37, 30, 0, Math.PI*2); g.fill();
+
+        // Main ball
+        const ball = g.createRadialGradient(25, 29, 2, 32, 37, 22);
+        ball.addColorStop(0, '#555565'); ball.addColorStop(0.45, '#222230'); ball.addColorStop(1, '#0d0d18');
+        g.fillStyle = ball;
+        g.beginPath(); g.arc(32, 37, 22, 0, Math.PI*2); g.fill();
+
+        // Highlight
+        g.fillStyle = 'rgba(255,255,255,0.13)';
+        g.beginPath(); g.ellipse(25, 30, 7, 5, -0.4, 0, Math.PI*2); g.fill();
+
+        // Skull emoji
+        g.font = '20px serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('💀', 32, 38);
+
+        // Fuse (zigzag brown rope)
+        g.strokeStyle = '#8B6914'; g.lineWidth = 2.5; g.lineCap = 'round'; g.lineJoin = 'round';
+        g.beginPath();
+        g.moveTo(32, 15); g.lineTo(36, 10); g.lineTo(29, 5); g.lineTo(33, 1);
+        g.stroke();
+
+        // Spark at fuse tip
+        const spark = g.createRadialGradient(33, 1, 0, 33, 1, 5);
+        spark.addColorStop(0, '#ffffff'); spark.addColorStop(0.3, '#FFD700'); spark.addColorStop(1, 'rgba(255,100,0,0)');
+        g.fillStyle = spark;
+        g.beginPath(); g.arc(33, 1, 5, 0, Math.PI*2); g.fill();
+
+        this.textures.addCanvas('bomb', c);
     }
 
     _makePlanets() {
