@@ -62,6 +62,7 @@ class GameScene extends Phaser.Scene {
         this._buildFx();
         this._buildHUD();
         this._buildInput();
+        this._initTornado();
         this._audioCtx = null;
         this._fartBuffer = null;
         this._fartAudioFallback = new Audio('/v6/src/apebble-fart-5-228245_edit.mp3');
@@ -724,12 +725,24 @@ class GameScene extends Phaser.Scene {
         const catchY = this.player.y - 46;
 
         // ── Hovínka ──────────────────────────────────────────────────────────
+        const tornadoRamp = this._tornadoActive
+            ? Math.min(1, Math.min(this._tornadoTime, this._tornadoDuration - this._tornadoTime) / 2)
+            : 0;
+
         for (let i = this.poops.length - 1; i >= 0; i--) {
             const p = this.poops[i];
             p.y      += p.vy * dt;
             p.rotation += p.vr * dt;
             p.wobble += 2.0 * dt;
-            p.x      += Math.sin(p.wobble) * 0.55;
+            // Normální lehký pohyb + tornádo wind cik-cak (každé hovínko jde jinou fází)
+            const windX = this._tornadoActive
+                ? Math.sin(this._tornadoTime * 4.2 + p.wobble * 1.8) * 200 * tornadoRamp * dt
+                : Math.sin(p.wobble) * 0.55;
+            p.x      += windX;
+            // Tornádo mírně brzdí/urychluje pád → nepravidelný vertikální pohyb
+            if (this._tornadoActive) {
+                p.y += Math.sin(this._tornadoTime * 2.8 + p.wobble * 0.9) * 55 * tornadoRamp * dt;
+            }
             // Velkorysý hitbox — chytání ze strany i shora
             if (Math.abs(p.x - this.player.x) < 55 && p.y > this.player.y - 95 && p.y < this.player.y + 10) {
                 this._catchPoop(p); continue;
@@ -765,6 +778,9 @@ class GameScene extends Phaser.Scene {
             }
         }
 
+        // ── Tornádo ──────────────────────────────────────────────────────────
+        this._updateTornado(dt);
+
         // ── Počasí ───────────────────────────────────────────────────────────
         this._updateWeather(dt);
 
@@ -773,6 +789,84 @@ class GameScene extends Phaser.Scene {
         const cm = this._cloudMult;
         this.cloudsF.forEach(c => { c.x -= c.spd * cm; if (c.x < -150) c.x = this.W + 150; });
         this.cloudsN.forEach(c => { c.x -= c.spd * cm; if (c.x < -150) c.x = this.W + 150; });
+    }
+
+    // ═══ TORNÁDO ══════════════════════════════════════════════════════════════
+    _initTornado() {
+        this._tornadoCd       = 60;          // první tornádo po 60s
+        this._tornadoActive   = false;
+        this._tornadoTime     = 0;
+        this._tornadoDuration = 11;          // trvá 11s
+        this._tornadoX        = this.W / 2;
+        this._tornadoGfx      = this.add.graphics().setDepth(2.5).setAlpha(0);
+    }
+
+    _updateTornado(dt) {
+        if (this.isOver || this.enteringPortal) return;
+
+        // ── Timer ────────────────────────────────────────────────────────────
+        if (!this._tornadoActive) {
+            this._tornadoCd -= dt;
+            if (this._tornadoCd <= 0) {
+                this._tornadoActive = true;
+                this._tornadoTime   = 0;
+                this._tornadoX      = Phaser.Math.Between(this.W * 0.25, this.W * 0.75);
+                this._tornadoCd     = 60 + Math.random() * 20;
+
+                // Výstražný text
+                const warn = this.add.text(this._tornadoX, this.H / 2 - 80, '🌪 TORNADO!', {
+                    fontFamily: '"Press Start 2P", monospace', fontSize: '16px',
+                    fill: '#ccddff', stroke: '#000', strokeThickness: 4
+                }).setOrigin(0.5).setDepth(30).setAlpha(0);
+                this.tweens.add({ targets: warn, alpha: 1, duration: 200, yoyo: true,
+                    hold: 900, repeat: 1, onComplete: () => warn.destroy() });
+
+                // Fade in grafika
+                this.tweens.add({ targets: this._tornadoGfx, alpha: 1, duration: 1200, ease: 'Sine.InOut' });
+            }
+            return;
+        }
+
+        // ── Aktivní tornádo ──────────────────────────────────────────────────
+        this._tornadoTime += dt;
+        const elapsed  = this._tornadoTime;
+        const dur      = this._tornadoDuration;
+
+        // Ramp up prvních 2s, ramp down posledních 2s
+        const ramp = Math.min(1, Math.min(elapsed, dur - elapsed) / 2);
+
+        if (elapsed >= dur) {
+            this._tornadoActive = false;
+            this.tweens.add({ targets: this._tornadoGfx, alpha: 0, duration: 1000, ease: 'Sine.InOut' });
+            return;
+        }
+
+        // ── Kresli funnel ────────────────────────────────────────────────────
+        const g  = this._tornadoGfx;
+        const tx = this._tornadoX;
+        g.clear();
+
+        const bands = 18;
+        for (let i = 0; i < bands; i++) {
+            const frac = i / (bands - 1);
+            const y    = 30 + frac * 260;
+            const hw   = (1 - frac * 0.88) * 46 + 5;          // wide→narrow
+            const sway = Math.sin(elapsed * 2.4 + frac * 3.2) * 12;
+            const spin = Math.sin(elapsed * 6 + frac * 4 + i) * hw * 0.15; // spinning stripes
+            const a    = (0.22 + 0.12 * Math.sin(elapsed * 5 + frac * 2.5)) * ramp;
+
+            g.lineStyle(2.5, 0x8899bb, a + 0.1);
+            g.beginPath();
+            g.ellipse(tx + sway + spin, y, hw, hw * 0.26, 0, 0, Math.PI * 2);
+            g.strokePath();
+        }
+
+        // Krajové linky funnelu (levá + pravá)
+        const topSway = Math.sin(elapsed * 2.4) * 12;
+        const botSway = Math.sin(elapsed * 2.4 + 3.2 * 3) * 12;
+        g.lineStyle(2, 0x7799cc, 0.30 * ramp);
+        g.beginPath(); g.moveTo(tx + topSway - 46, 30); g.lineTo(tx + botSway - 5, 290); g.strokePath();
+        g.beginPath(); g.moveTo(tx + topSway + 46, 30); g.lineTo(tx + botSway + 5, 290); g.strokePath();
     }
 
     // ═══ POČASÍ ═══════════════════════════════════════════════════════════════
