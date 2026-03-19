@@ -736,18 +736,19 @@ class GameScene extends Phaser.Scene {
             p.wobble += 2.0 * dt;
 
             if (this._tornadoActive) {
-                // Kumulativní horizontální rychlost — každé hovínko má jinou fázi (p.wobble*4)
-                // → různý drift směr → hráč musí aktivně pronásledovat
-                if (p.tVx === undefined) p.tVx = (Math.random() - 0.5) * 80;
-                p.tVx += Math.sin(this._tornadoTime * 1.6 + p.wobble * 4) * 480 * tornadoRamp * dt;
-                p.tVx *= (1 - 1.8 * dt);   // tření, terminální rychlost ~480/1.8 ≈ 267 px/s
-                p.tVx  = Phaser.Math.Clamp(p.tVx, -300, 300);
-                p.x   += p.tVx * dt;
-                // Mírné vertikální kolísání — nepravidelný pád
-                p.y   += Math.sin(this._tornadoTime * 2.5 + p.wobble) * 38 * tornadoRamp * dt;
+                // Přiřaď jednou pevný náhodný směr — ne oscilaci, ale skutečný drift
+                if (p.tornadoVx === undefined) {
+                    const mag = 180 + Math.random() * 160; // 180–340 px/s
+                    p.tornadoVx = (Math.random() < 0.5 ? 1 : -1) * mag;
+                }
+                // Pevný drift + malý wobble pro realismus
+                p.x += p.tornadoVx * tornadoRamp * dt;
+                p.x += Math.sin(this._tornadoTime * 5 + p.wobble * 2) * 22 * tornadoRamp * dt;
+                // Mírné vertikální kolísání
+                p.y += Math.sin(this._tornadoTime * 2.5 + p.wobble) * 35 * tornadoRamp * dt;
             } else {
-                p.tVx = undefined;
-                p.x  += Math.sin(p.wobble) * 0.55;  // normální lehký wobble
+                p.tornadoVx = undefined;
+                p.x += Math.sin(p.wobble) * 0.55;
             }
             // Velkorysý hitbox — chytání ze strany i shora
             if (Math.abs(p.x - this.player.x) < 55 && p.y > this.player.y - 95 && p.y < this.player.y + 10) {
