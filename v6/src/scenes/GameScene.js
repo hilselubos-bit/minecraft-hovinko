@@ -744,6 +744,9 @@ class GameScene extends Phaser.Scene {
                 // Pevný drift + malý wobble pro realismus
                 p.x += p.tornadoVx * tornadoRamp * dt;
                 p.x += Math.sin(this._tornadoTime * 5 + p.wobble * 2) * 22 * tornadoRamp * dt;
+                // Odraz od okrajů
+                if (p.x < 30)          { p.x = 30;          p.tornadoVx = Math.abs(p.tornadoVx); }
+                if (p.x > this.W - 30) { p.x = this.W - 30; p.tornadoVx = -Math.abs(p.tornadoVx); }
                 // Mírné vertikální kolísání
                 p.y += Math.sin(this._tornadoTime * 2.5 + p.wobble) * 35 * tornadoRamp * dt;
             } else {
