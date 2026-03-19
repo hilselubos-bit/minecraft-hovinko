@@ -22,8 +22,8 @@ class GameScene extends Phaser.Scene {
         // Power-up stav (vše v update loopu — žádné Phaser timery)
         this.puCd          = 6;     // odpočet do prvního power-upu [s]
         this.puInterval    = 13;    // interval mezi spawny [s]
-        this._portalGcdMax = 40;    // garantovaný portál každých X sekund
-        this._portalGcd    = 40;
+        this._portalGcdMax = 70;    // garantovaný portál každých X sekund
+        this._portalGcd    = 70;
         this.shield        = false; // štít aktivní
         this.starSec       = 0;     // kolik sekund zbývá 2× bonus
         this.shieldPulse   = 0;
@@ -344,7 +344,7 @@ class GameScene extends Phaser.Scene {
 
     _spawnPowerup() {
         const roll = Math.random();
-        const type = roll < 0.18 ? 'shield' : roll < 0.34 ? 'star' : roll < 0.56 ? 'butt' : roll < 0.72 ? 'heart' : 'portal';
+        const type = roll < 0.20 ? 'shield' : roll < 0.38 ? 'star' : roll < 0.62 ? 'butt' : roll < 0.84 ? 'heart' : 'portal';
         const x    = Phaser.Math.Between(55, this.W - 55);
         const img  = this.add.image(x, -55, `powerup_${type}`).setScale(0).setDepth(7);
         img.vy     = 62 + Math.random() * 22;
