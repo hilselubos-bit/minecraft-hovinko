@@ -863,16 +863,16 @@ class GameScene extends Phaser.Scene {
             const hw   = (1 - frac * 0.88) * 46 + 5;          // wide→narrow
             const sway = Math.sin(elapsed * 2.4 + frac * 3.2) * 12;
             const spin = Math.sin(elapsed * 6 + frac * 4 + i) * hw * 0.15; // spinning stripes
-            const a    = (0.22 + 0.12 * Math.sin(elapsed * 5 + frac * 2.5)) * ramp;
+            const a    = (0.45 + 0.18 * Math.sin(elapsed * 5 + frac * 2.5)) * ramp;
 
-            g.lineStyle(2.5, 0x8899bb, a + 0.1);
+            g.lineStyle(3.5, 0x6677aa, a);
             g.strokeEllipse(tx + sway + spin, y, hw * 2, hw * 0.52);
         }
 
         // Krajové linky funnelu (levá + pravá)
         const topSway = Math.sin(elapsed * 2.4) * 12;
         const botSway = Math.sin(elapsed * 2.4 + 3.2 * 3) * 12;
-        g.lineStyle(2, 0x7799cc, 0.30 * ramp);
+        g.lineStyle(3, 0x5566bb, 0.55 * ramp);
         g.beginPath(); g.moveTo(tx + topSway - 46, 30); g.lineTo(tx + botSway - 5, 290); g.strokePath();
         g.beginPath(); g.moveTo(tx + topSway + 46, 30); g.lineTo(tx + botSway + 5, 290); g.strokePath();
     }
