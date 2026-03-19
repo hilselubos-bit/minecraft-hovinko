@@ -856,9 +856,7 @@ class GameScene extends Phaser.Scene {
             const a    = (0.22 + 0.12 * Math.sin(elapsed * 5 + frac * 2.5)) * ramp;
 
             g.lineStyle(2.5, 0x8899bb, a + 0.1);
-            g.beginPath();
-            g.ellipse(tx + sway + spin, y, hw, hw * 0.26, 0, 0, Math.PI * 2);
-            g.strokePath();
+            g.strokeEllipse(tx + sway + spin, y, hw * 2, hw * 0.52);
         }
 
         // Krajové linky funnelu (levá + pravá)
